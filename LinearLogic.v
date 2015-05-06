@@ -158,16 +158,89 @@ Inductive ILL_proof : env -> formula -> Prop :=
            g |- A
 
   (* Multiplicative connectives *)
-  | Impl_R : forall (g : env) (A B : formula),
-              (A :: g) |- B ->
-              g |- (A -o B)
+  (* gamma = classical resources; delta = linear resources (after Pfenning)
+     can I encode this at the type level? TODO *)
 
-  (* | Impl_L : forall (g d1 d2 : env) (A B C : formula), *)
-  (*             (g ++ d1) |- A -> *)
-  (*             (g ++ d2 *)
+  (* TODO: may need AGB's encoding with setminus instead of union *)
+  | Impl_R : forall (g d : env) (A B : formula),
+              (A :: g U d) |- B ->
+              (g U d) |- (A -o B)
+
+  (* basically, if you can prove the assump A, then you can have the conclusion B *)
+  | Impl_L : forall (g d1 d2 : env) (A B C : formula),
+              (g U d1) |- A ->
+              (B :: g U d2) |- C ->
+              ((A -o B) :: g U d1 U d2) |- C
+
+  | Times_R : forall (g d1 d2 : env) (A B : formula),
+                (g U d1) |- A ->
+                (g U d2) |- B ->
+                (g U d1 U d2) |- (A ** B)
+
+  | Times_L : forall (g d : env) (A B C : formula),
+                (A :: B :: g U d) |- C ->
+                ((A ** B) :: g U d) |- C
+
+  | One_R : forall (g d : env),
+              d = EmptyBag formula ->
+              (g U d) |- One
+
+  | One_L : forall (g d : env),
+              (g U d) |- C ->
+              (One :: g U d) |- C
+
+  (* Additive connectives *)
+  (* With = internal choice *)                                  
+  | With_R : forall (g d : env) (A B : formula),
+               (g U d) |- A ->
+               (g U d) |- B ->
+               (g U d) |- (A && B)
+
+  | With_L1 : forall (g d : env) (A B C : formula),
+                (A :: g U d) |- C ->
+                ((A && B) :: g U d) |- C
+
+  | With_L2 : forall (g d : env) (A B C : formula),
+                (B :: g U d) |- C ->
+                ((A && B) :: g U d) |- C
+
+  | Top_R : forall (g d : env),
+              (g U d) |- Top
+
+  (* Plus = external choice *)
+  | Plus_R1 : forall (g d : env) (A B : formula),
+                (g U d) |- A ->
+                (g U d) |- (A ++ B)
+
+  | Plus_R2 : forall (g d : env) (A B : formula),
+                (g U d) |- B ->
+                (g U d) |- (A ++ B)
+
+  | Plus_L : forall (g d : env) (A B C : formula),
+               (A :: g U d) |- C ->
+               (B :: g U d) |- C ->
+               ((A ++ B) :: g U d) |- C
+
+  | Zero_L : forall (g d : env) (C : formula),
+               (Zero :: g U d) |- C
+
+  (* Quantifiers: included in Coq *)
+
+  (* Exponentials *)
+  (* TODO: implication is included in Coq *)
+  (* note the empty linear context *)
+  | Bang_R : forall (g d : env) (A : formula),
+               d = EmptyBag formula ->
+               (g U d) |- A ->
+               (g U d) |- !A
+
+  (* move a linear factory to be a normal classical assumption *)
+  | Bang_L : forall (g d : env) (A C : formula),
+               ((A :: g) U d) |- C ->
+               (g U (!A :: d)) |- C
 
   where "x |- y" := (ILL_proof x y).
 
-
+(* Various other ILL axioms here *)
 
 End LinearLogic.
