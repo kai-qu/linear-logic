@@ -82,17 +82,19 @@ and so on for each rule! *)
 - subset
 - bang *)
 
-Require Import Coq.Sets.Multiset.
+Require Import Coq.Lists.List.
+Import ListNotations.
 
 Module LinearLogic.
 
-Inductive var : Type :=
-  | Var : nat -> var.
+Set Implicit Arguments.
+
+Definition Var : Type := nat.
 
 (* ILL connectives -- combination of those given by Pfenning + AGB's encoding *)
 Inductive formula : Type :=
   (* Atomic *)
-  | LProp : var -> formula
+  | LProp : Var -> formula
   (* Multiplicative *)
   | Implies : formula -> formula -> formula (* -o *)
   | Times : formula -> formula -> formula (* (X) *)
@@ -107,10 +109,10 @@ Inductive formula : Type :=
   (* implication/arrow TODO *)
 .
 
-Check (LProp (Var 5)).
-Definition A := LProp (Var 0).
-Definition B := LProp (Var 1).
-Definition C := LProp (Var 2).
+Check (LProp 5).
+Definition A := LProp 0.
+Definition B := LProp 1.
+Definition C := LProp 2.
 
 (* TODO change levels and associativity *)
 Notation "A -o B" := (Implies A B) (at level 100, right associativity).
@@ -121,12 +123,11 @@ Notation "A (+) B" := (Plus A B) (at level 100, right associativity).
 Notation "!A" := (Bang A) (at level 200, right associativity).
 
 (* TODO environment type: multiset? list? + environment notations *)
-(* Environment is a multiset *)
-Inductive env : Type :=
-  | Env : multiset formula -> env.
 
-Definition env1 := EmptyBag.
-Check SingletonBag.
+Definition env : Type := list formula.
+
+Definition env1 : env := [].
+
 Definition eqFormula (f1 : formula) (f2 : formula) :=
   match f1, f2 with
     | LProp v1, LProp v2 => v1 = v2
@@ -137,17 +138,21 @@ Lemma eq_neq_formula : forall (f1 f2 : formula),
 Proof.
 Admitted.
 
-Definition oneFormulaSet := SingletonBag eqFormula eq_neq_formula.
-Definition env2 := oneFormulaSet A.
+Definition env2 := [A].
 
-Notation "{A}" := (oneFormulaSet A) (at level 200, right associativity).
-Notation "S1 == S2" := (meq S1 S2) (at level 100, right associativity).
+(* hopefully don't need to deal with list equality modulo permutation *)
 
-(* TODO: type synonyms for vars and envs *)
-Check (env1 == env2).
+Reserved Notation "A '|-' B" (at level 40).
 
-Inductive ILL_proof : multiset formula -> formula -> Prop :=
-| Id : forall (e : multiset formula) (A : formula), e == {A} -> ILL_proof e A.
-  (* where "x |- y" := (ILL_proof x y). *)
+Inductive ILL_proof : env -> formula -> Prop :=
+  | Id : forall (e : env) (A : formula),
+           e = [A] -> e |- A
+
+  (* Multiplicative connectives *)
+
+
+  where "x |- y" := (ILL_proof x y).
+
+
 
 End LinearLogic.
