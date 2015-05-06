@@ -11,7 +11,7 @@ Goal for Wednesday night:
 - actually pfenning's notes are the best
   - natural deduction vs. sequent (bottom-up)
 - which ILL?
-- how to encode ILL? (props, formulae, proofs...)
+- how to encode ILL? (props, LinPrope, proofs...)
 - notations
 
 -- By Tues night
@@ -83,28 +83,29 @@ and so on for each rule! *)
 - bang *)
 
 
-Module LinearLogic.
+(* Module LinearLogic. *)
 
 Require Import Coq.Sets.Multiset.
+Require Export Coq.Sets.Multiset.
 Set Implicit Arguments.
 
 Definition Var : Type := nat.
 
 (* ILL connectives -- combination of those given by Pfenning + AGB's encoding *)
-Inductive formula : Type :=
+Inductive LinProp : Type :=
   (* Atomic *)
-  | LProp : Var -> formula
+  | LProp : Var -> LinProp
   (* Multiplicative *)
-  | Implies : formula -> formula -> formula (* -o *)
-  | Times : formula -> formula -> formula (* (X) *)
-  | One : formula                         (* Multiplicative identity TODO *)
+  | Implies : LinProp -> LinProp -> LinProp (* -o *)
+  | Times : LinProp -> LinProp -> LinProp (* (X) *)
+  | One : LinProp                         (* Multiplicative identity TODO *)
   (* Additive *)
-  | With : formula -> formula -> formula (* & *)
-  | Plus : formula -> formula -> formula (* (+) *)
-  | Top : formula                        (* aka True? *)
-  | Zero : formula                       (* Additive identity TODO *)
+  | With : LinProp -> LinProp -> LinProp (* & *)
+  | Plus : LinProp -> LinProp -> LinProp (* (+) *)
+  | Top : LinProp                        (* aka True? *)
+  | Zero : LinProp                       (* Additive identity TODO *)
   (* Exponentials *)
-  | Bang : formula -> formula   (* TODO *)
+  | Bang : LinProp -> LinProp   (* TODO *)
   (* implication/arrow TODO *)
 .
 
@@ -123,38 +124,38 @@ Notation "!A" := (Bang A) (at level 200, right associativity).
 
 (* TODO environment type: multiset? list? + environment notations *)
 
-Definition env : Type := multiset formula.
+Definition env : Type := multiset LinProp.
 
-Definition env1 : env := EmptyBag formula.
+Definition env1 : env := EmptyBag LinProp.
 
-Definition eqFormula (f1 : formula) (f2 : formula) :=
+Definition eqLinProp (f1 : LinProp) (f2 : LinProp) :=
   match f1, f2 with
     | LProp v1, LProp v2 => v1 = v2
     | _, _ => False
   end. (* TODO *)
-Lemma eq_neq_formula : forall (f1 f2 : formula),
-                         {eqFormula f1 f2} + {~ eqFormula f1 f2}.
+Lemma eq_neq_LinProp : forall (f1 f2 : LinProp),
+                         {eqLinProp f1 f2} + {~ eqLinProp f1 f2}.
 Proof.
 Admitted.
 
-Definition singleton := SingletonBag eqFormula eq_neq_formula.
+Definition singleton := SingletonBag eqLinProp eq_neq_LinProp.
 Definition env2 := singleton A.
 
-Notation "{A}" := (singleton A) (at level 200, right associativity).
-Notation "S1 == S2" := (meq S1 S2) (at level 100, right associativity).
+Notation "{{ Z }}" := (singleton Z) (at level 5, Z at level 99, right associativity).
+Notation "S == T" := (meq S T) (at level 1, left associativity).
 Notation "g1 'U' g2" := (munion g1 g2) (at level 100, right associativity).
-Notation "A :: g" := (munion (singleton A) g) (at level 60, right associativity).
+Notation "Z :: g" := (munion (singleton Z) g) (at level 60, right associativity).
 
-Check (env1 == env2).
+(* Check ({A} == env1). *)
 
 (* hopefully don't need to deal with list equality modulo permutation *)
 
-Reserved Notation "A '|-' B" (at level 40).
+Reserved Notation "A '|-' B" (at level 0).
 (* Here, (->) denotes (--------) *)
 (* convention: env name lowercase, prop name uppercase *)
-Inductive ILL_proof : env -> formula -> Prop :=
-  | Id : forall (g : env) (A : formula),
-           (g == {A}) ->
+Inductive LinProof : env -> LinProp -> Prop :=
+  | Id : forall (g : env) (A : LinProp),
+           (meq g {{A}}) ->
            g |- A
 
   (* Multiplicative connectives *)
@@ -162,27 +163,27 @@ Inductive ILL_proof : env -> formula -> Prop :=
      can I encode this at the type level? TODO *)
 
   (* TODO: may need AGB's encoding with setminus instead of union *)
-  | Impl_R : forall (g d : env) (A B : formula),
+  | Impl_R : forall (g d : env) (A B : LinProp),
               (A :: g U d) |- B ->
               (g U d) |- (A -o B)
 
   (* basically, if you can prove the assump A, then you can have the conclusion B *)
-  | Impl_L : forall (g d1 d2 : env) (A B C : formula),
+  | Impl_L : forall (g d1 d2 : env) (A B C : LinProp),
               (g U d1) |- A ->
               (B :: g U d2) |- C ->
               ((A -o B) :: g U d1 U d2) |- C
 
-  | Times_R : forall (g d1 d2 : env) (A B : formula),
+  | Times_R : forall (g d1 d2 : env) (A B : LinProp),
                 (g U d1) |- A ->
                 (g U d2) |- B ->
                 (g U d1 U d2) |- (A ** B)
 
-  | Times_L : forall (g d : env) (A B C : formula),
+  | Times_L : forall (g d : env) (A B C : LinProp),
                 (A :: B :: g U d) |- C ->
                 ((A ** B) :: g U d) |- C
 
   | One_R : forall (g d : env),
-              d = EmptyBag formula ->
+              d = EmptyBag LinProp ->
               (g U d) |- One
 
   | One_L : forall (g d : env),
@@ -191,16 +192,16 @@ Inductive ILL_proof : env -> formula -> Prop :=
 
   (* Additive connectives *)
   (* With = internal choice *)                                  
-  | With_R : forall (g d : env) (A B : formula),
+  | With_R : forall (g d : env) (A B : LinProp),
                (g U d) |- A ->
                (g U d) |- B ->
                (g U d) |- (A && B)
 
-  | With_L1 : forall (g d : env) (A B C : formula),
+  | With_L1 : forall (g d : env) (A B C : LinProp),
                 (A :: g U d) |- C ->
                 ((A && B) :: g U d) |- C
 
-  | With_L2 : forall (g d : env) (A B C : formula),
+  | With_L2 : forall (g d : env) (A B C : LinProp),
                 (B :: g U d) |- C ->
                 ((A && B) :: g U d) |- C
 
@@ -208,20 +209,20 @@ Inductive ILL_proof : env -> formula -> Prop :=
               (g U d) |- Top
 
   (* Plus = external choice *)
-  | Plus_R1 : forall (g d : env) (A B : formula),
+  | Plus_R1 : forall (g d : env) (A B : LinProp),
                 (g U d) |- A ->
                 (g U d) |- (A ++ B)
 
-  | Plus_R2 : forall (g d : env) (A B : formula),
+  | Plus_R2 : forall (g d : env) (A B : LinProp),
                 (g U d) |- B ->
                 (g U d) |- (A ++ B)
 
-  | Plus_L : forall (g d : env) (A B C : formula),
+  | Plus_L : forall (g d : env) (A B C : LinProp),
                (A :: g U d) |- C ->
                (B :: g U d) |- C ->
                ((A ++ B) :: g U d) |- C
 
-  | Zero_L : forall (g d : env) (C : formula),
+  | Zero_L : forall (g d : env) (C : LinProp),
                (Zero :: g U d) |- C
 
   (* Quantifiers: included in Coq *)
@@ -229,18 +230,20 @@ Inductive ILL_proof : env -> formula -> Prop :=
   (* Exponentials *)
   (* TODO: implication is included in Coq *)
   (* note the empty linear context *)
-  | Bang_R : forall (g d : env) (A : formula),
-               d = EmptyBag formula ->
+  | Bang_R : forall (g d : env) (A : LinProp),
+               d = EmptyBag LinProp ->
                (g U d) |- A ->
                (g U d) |- !A
 
   (* move a linear factory to be a normal classical assumption *)
-  | Bang_L : forall (g d : env) (A C : formula),
+  | Bang_L : forall (g d : env) (A C : LinProp),
                ((A :: g) U d) |- C ->
                (g U (!A :: d)) |- C
 
-  where "x |- y" := (ILL_proof x y).
+  where "x |- y" := (LinProof x y).
 
 (* Various other ILL axioms here *)
 
-End LinearLogic.
+(* Multiset subtraction? TODO *)
+
+(* End LinearLogic. *)
