@@ -150,7 +150,7 @@ Notation "Z :: g" := (munion (singleton Z) g) (at level 60, right associativity)
 
 (* hopefully don't need to deal with list equality modulo permutation *)
 
-Reserved Notation "A '|-' B" (at level 0).
+Reserved Notation "A '|-' B" (at level 3).
 (* Here, (->) denotes (--------) *)
 (* convention: env name lowercase, prop name uppercase *)
 Inductive LinProof : env -> LinProp -> Prop :=
