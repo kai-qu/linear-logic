@@ -82,11 +82,10 @@ and so on for each rule! *)
 - subset
 - bang *)
 
-Require Import Coq.Lists.List.
-Import ListNotations.
 
 Module LinearLogic.
 
+Require Import Coq.Sets.Multiset.
 Set Implicit Arguments.
 
 Definition Var : Type := nat.
@@ -118,15 +117,15 @@ Definition C := LProp 2.
 Notation "A -o B" := (Implies A B) (at level 100, right associativity).
 Notation "A ** B" := (Times A B) (at level 100, right associativity).
 (* TODO figure out how to override && and ++ *)
-Notation "A & B" := (With A B) (at level 100, right associativity).
-Notation "A (+) B" := (Plus A B) (at level 100, right associativity).
+Notation "A && B" := (With A B) (at level 40, left associativity).
+Notation "A ++ B" := (Plus A B) (at level 60, right associativity).
 Notation "!A" := (Bang A) (at level 200, right associativity).
 
 (* TODO environment type: multiset? list? + environment notations *)
 
-Definition env : Type := list formula.
+Definition env : Type := multiset formula.
 
-Definition env1 : env := [].
+Definition env1 : env := EmptyBag formula.
 
 Definition eqFormula (f1 : formula) (f2 : formula) :=
   match f1, f2 with
@@ -138,18 +137,34 @@ Lemma eq_neq_formula : forall (f1 f2 : formula),
 Proof.
 Admitted.
 
-Definition env2 := [A].
+Definition singleton := SingletonBag eqFormula eq_neq_formula.
+Definition env2 := singleton A.
+
+Notation "{A}" := (singleton A) (at level 200, right associativity).
+Notation "S1 == S2" := (meq S1 S2) (at level 100, right associativity).
+Notation "g1 'U' g2" := (munion g1 g2) (at level 100, right associativity).
+Notation "A :: g" := (munion (singleton A) g) (at level 60, right associativity).
+
+Check (env1 == env2).
 
 (* hopefully don't need to deal with list equality modulo permutation *)
 
 Reserved Notation "A '|-' B" (at level 40).
-
+(* Here, (->) denotes (--------) *)
+(* convention: env name lowercase, prop name uppercase *)
 Inductive ILL_proof : env -> formula -> Prop :=
-  | Id : forall (e : env) (A : formula),
-           e = [A] -> e |- A
+  | Id : forall (g : env) (A : formula),
+           (g == {A}) ->
+           g |- A
 
   (* Multiplicative connectives *)
+  | Impl_R : forall (g : env) (A B : formula),
+              (A :: g) |- B ->
+              g |- (A -o B)
 
+  (* | Impl_L : forall (g d1 d2 : env) (A B C : formula), *)
+  (*             (g ++ d1) |- A -> *)
+  (*             (g ++ d2 *)
 
   where "x |- y" := (ILL_proof x y).
 
