@@ -3,6 +3,8 @@ Require Import Coq.Strings.String.
 Require Import Setoid.
 Open Scope string_scope.
 
+(* --------------- Setup *)
+
 (* To allow setoid rewrites on multisets *)
 Add Parametric Relation A : (multiset A) (@meq A)
  reflexivity proved by (@meq_refl A)
@@ -29,6 +31,8 @@ Definition ar : Arm := "arm".
 
 (* Note that it's not a block datatype or arm datatype with internal state. Blocks and arms have no state. Their state is determined by the props holding for it in the environment. Could we model this differently? *)
 
+(* ----------------------- *)
+
 (* Props (describing states) *)
 
 (* Here they are just axioms (?), but they could be "more provable axioms" if each block had a coordinate and size. So to prove (on x y), you would have to show that the locations and coordinates matches up. Or, you could write a function that computed on the locs and coords and returned a boolean. *)
@@ -44,17 +48,8 @@ Variable empty : Arm -> LinProp.
 
 (* Axioms (valid actions) *)
 (* Note these are rules (Coq propositions), not linear logic propositions *)
-(* Check {empty}. *)
-
-(* Check ((EmptyBag LinProp) |- A). *)
-Check (empty ar).
-Check (clear bl).
-Check ((empty ar) ** (clear bl)).
-(* Check {{A ** B}}. *)
-(* Check {{A ** B}} |- Top. *)
 
 (* TODO: fix sequent notation so second arg doesn't need parens *)
-(* TODO: do the foralls mess with anything? *)
 Axiom get : forall (arm : Arm) (top bot : Block),
               {{ empty arm ** clear top }}
               |- (holds arm top **
@@ -138,7 +133,7 @@ Theorem SwapAB : forall (top bot other : Block) (arm : Arm),
                    {{ empty arm ** clear top ** on top bot ** table bot
                             ** table other ** clear other }}
                    |- (on bot top ** Top).
-                  (* TODO: Top is supposed to be a sink for unused predicates, since 
+                  (* Top is supposed to be a sink for unused predicates, since 
                    g |- T for any g. *)
 Proof.
   intros.
@@ -150,6 +145,5 @@ Admitted.
 
 
 
-(* Some automation *)
-(* Do we need the cut rule? *)
+(* Some automation: TODO *)
 
