@@ -20,9 +20,11 @@ Progress:
 
 TODO: 
 
+- Add the cut rule
 - Figure out how to do setoid rewrites with multisets
 - Possibly adjust ILL rules to make working with environments easier
 - Prove environment lemmas
+
 - Prove the 3 blocks world lemmas
 - Prove the final blocks world lemma
 - Add automation to this scenario 

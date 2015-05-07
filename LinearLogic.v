@@ -47,104 +47,126 @@ Admitted.
 
 Definition singleton := SingletonBag eqLinProp eq_neq_LinProp.
 
+Definition inSet {A : Type} (m : multiset A) (x : A) : Prop :=
+  multiplicity m x > 0.
+
+Definition setMinus {A : Type} (m : multiset A) (x : A) : multiset A :=
+  Bag (fun (x : A) => multiplicity m x - 1).
+
 Notation "{{ Z }}" := (singleton Z) (at level 5, Z at level 99, right associativity).
 Notation "S == T" := (meq S T) (at level 1, left associativity).
 Notation "g1 'U' g2" := (munion g1 g2) (at level 100, right associativity).
 Notation "Z :: g" := (munion (singleton Z) g) (at level 60, right associativity).
+Notation "x ∈ S" := (inSet S x) (at level 60, right associativity).
+Notation "S \ x" := (setMinus S x) (at level 60, right associativity).
 
 Reserved Notation "A '|-' B" (at level 3).
 
 (* Here, (->) denotes (--------) *)
 (* convention: env name lowercase, prop name uppercase *)
+(* TODO: remove distinction between g and d? gets rid of matching on g U d *)
+(* gamma = classical resources; delta = linear resources (after Pfenning)
+     can I encode this at the type level? TODO *)
+
 Inductive LinProof : env -> LinProp -> Prop :=
   | Id : forall (g : env) (A : LinProp),
-           (meq g {{A}}) ->
+           (g == {{A}}) ->
            g |- A
 
   (* Multiplicative connectives *)
-  (* gamma = classical resources; delta = linear resources (after Pfenning)
-     can I encode this at the type level? TODO *)
 
-  (* TODO: may need AGB's encoding with setminus instead of union *)
-  | Impl_R : forall (g d : env) (A B : LinProp),
-              (A :: g U d) |- B ->
-              (g U d) |- (A -o B)
+  | Impl_R : forall (g : env) (A B : LinProp),
+              (A :: g) |- B ->
+              g |- (A -o B)
 
   (* basically, if you can prove the assump A, then you can have the conclusion B *)
+  (* TODO *)
   | Impl_L : forall (g d1 d2 : env) (A B C : LinProp),
-              (g U d1) |- A ->
-              (B :: g U d2) |- C ->
-              ((A -o B) :: g U d1 U d2) |- C
+               (A -o B) ∈ g ->
+               (g \ (A -o B)) == (d1 U d2) ->
+               d1 |- A ->
+               (B :: d2) |- C ->
+               g |- C
 
   | Times_R : forall (g d1 d2 : env) (A B : LinProp),
-                (g U d1) |- A ->
-                (g U d2) |- B ->
-                (g U d1 U d2) |- (A ** B)
+                g == (d1 U d2) ->
+                d1 |- A ->
+                d2 |- B ->
+                g |- (A ** B)
 
-  | Times_L : forall (g d : env) (A B C : LinProp),
-                (A :: B :: g U d) |- C ->
-                ((A ** B) :: g U d) |- C
+  | Times_L : forall (g : env) (A B C : LinProp),
+                (A ** B) ∈ g ->
+                (A :: B :: (g \ (A ** B))) |- C ->
+                g |- C
 
-  | One_R : forall (g d : env),
-              d = EmptyBag LinProp ->
-              (g U d) |- One
+  | One_R : forall (g : env),
+              g == (EmptyBag LinProp) ->
+              g |- One
 
-  | One_L : forall (g d : env) (C : LinProp),
-              (g U d) |- C ->
-              (One :: g U d) |- C
+  | One_L : forall (g : env) (C : LinProp),
+              One ∈ g ->
+              (g \ One) |- C ->
+              g |- C
 
   (* Additive connectives *)
-  (* With = internal choice *)                                  
-  | With_R : forall (g d : env) (A B : LinProp),
-               (g U d) |- A ->
-               (g U d) |- B ->
-               (g U d) |- (A && B)
+  (* With = internal choice *)
+  | With_R : forall (g : env) (A B : LinProp),
+               g |- A ->
+               g |- B ->
+               g |- (A && B)
 
-  | With_L1 : forall (g d : env) (A B C : LinProp),
-                (A :: g U d) |- C ->
-                ((A && B) :: g U d) |- C
+  | With_L1 : forall (g : env) (A B C : LinProp),
+                (A && B) ∈ g ->
+                (A :: (g \ (A && B))) |- C ->
+                g |- C
 
-  | With_L2 : forall (g d : env) (A B C : LinProp),
-                (B :: g U d) |- C ->
-                ((A && B) :: g U d) |- C
+  | With_L2 : forall (g : env) (A B C : LinProp),
+                (A && B) ∈ g ->
+                (B :: (g \ (A && B))) |- C ->
+                g |- C
 
-  | Top_R : forall (g d : env),
-              (g U d) |- Top
+  | Top_R : forall (g : env),
+              g |- Top
 
-  (* Plus = external choice *)
-  | Plus_R1 : forall (g d : env) (A B : LinProp),
-                (g U d) |- A ->
-                (g U d) |- (A ++ B)
+  (* (* Plus = external choice *) *)
+  | Plus_R1 : forall (g : env) (A B : LinProp),
+                g |- A ->
+                g |- (A ++ B)
 
-  | Plus_R2 : forall (g d : env) (A B : LinProp),
-                (g U d) |- B ->
-                (g U d) |- (A ++ B)
+  | Plus_R2 : forall (g : env) (A B : LinProp),
+                g |- B ->
+                g |- (A ++ B)
 
-  | Plus_L : forall (g d : env) (A B C : LinProp),
-               (A :: g U d) |- C ->
-               (B :: g U d) |- C ->
-               ((A ++ B) :: g U d) |- C
+  | Plus_L : forall (g : env) (A B C : LinProp),
+               (A ++ B) ∈ g ->
+               (A :: (g \ (A ++ B))) |- C ->
+               (B :: (g \ (A ++ B))) |- C ->
+               g |- C
 
-  | Zero_L : forall (g d : env) (C : LinProp),
-               (Zero :: g U d) |- C
+  | Zero_L : forall (g : env) (C : LinProp),
+               Zero ∈ g ->
+               g |- C
 
-  (* Quantifiers: included in Coq *)
+  (* (* Quantifiers: included in Coq *) *)
 
-  (* Exponentials *)
-  (* TODO: implication is included in Coq *)
-  (* note the empty linear context *)
-  | Bang_R : forall (g d : env) (A : LinProp),
-               d = EmptyBag LinProp ->
-               (g U d) |- A ->
-               (g U d) |- !A
+  (* (* Exponentials *) *)
+  (* (* TODO: implication is included in Coq *) *)
+  (* (* note the empty linear context *) *)
+  (* | Bang_R : forall (g : env) (A : LinProp), *)
+  (*              d = EmptyBag LinProp -> *)
+  (*              g |- A -> *)
+  (*              g |- !A *)
 
-  (* move a linear factory to be a normal classical assumption *)
-  | Bang_L : forall (g d : env) (A C : LinProp),
-               ((A :: g) U d) |- C ->
-               (g U ((!A) :: d)) |- C
+  (* (* move a linear factory to be a normal classical assumption *) *)
+  (* | Bang_L : forall (g : env) (A C : LinProp), *)
+  (*              ((A :: g) U d) |- C -> *)
+  (*              (g U ((!A) :: d)) |- C *)
+
+                      (* TODO: AGB has 3 bang rules *)
 
   where "x |- y" := (LinProof x y).
 
 (* Various other ILL axioms here *)
+(* Cut rule *)
 
 (* Multiset subtraction? TODO *)
