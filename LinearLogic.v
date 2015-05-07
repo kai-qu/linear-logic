@@ -110,9 +110,9 @@ Inductive LinProp : Type :=
 .
 
 Check (LProp 5).
-Definition A := LProp 0.
-Definition B := LProp 1.
-Definition C := LProp 2.
+(* Definition A := LProp 0. *)
+(* Definition B := LProp 1. *)
+(* Definition C := LProp 2. *)
 
 (* TODO change levels and associativity *)
 Notation "A -o B" := (Implies A B) (at level 100, right associativity).
@@ -120,7 +120,7 @@ Notation "A ** B" := (Times A B) (at level 100, right associativity).
 (* TODO figure out how to override && and ++ *)
 Notation "A && B" := (With A B) (at level 40, left associativity).
 Notation "A ++ B" := (Plus A B) (at level 60, right associativity).
-Notation "!A" := (Bang A) (at level 200, right associativity).
+Notation "! A" := (Bang A) (at level 200, right associativity).
 
 (* TODO environment type: multiset? list? + environment notations *)
 
@@ -139,7 +139,6 @@ Proof.
 Admitted.
 
 Definition singleton := SingletonBag eqLinProp eq_neq_LinProp.
-Definition env2 := singleton A.
 
 Notation "{{ Z }}" := (singleton Z) (at level 5, Z at level 99, right associativity).
 Notation "S == T" := (meq S T) (at level 1, left associativity).
@@ -186,7 +185,7 @@ Inductive LinProof : env -> LinProp -> Prop :=
               d = EmptyBag LinProp ->
               (g U d) |- One
 
-  | One_L : forall (g d : env),
+  | One_L : forall (g d : env) (C : LinProp),
               (g U d) |- C ->
               (One :: g U d) |- C
 
@@ -238,7 +237,7 @@ Inductive LinProof : env -> LinProp -> Prop :=
   (* move a linear factory to be a normal classical assumption *)
   | Bang_L : forall (g d : env) (A C : LinProp),
                ((A :: g) U d) |- C ->
-               (g U (!A :: d)) |- C
+               (g U ((!A) :: d)) |- C
 
   where "x |- y" := (LinProof x y).
 
