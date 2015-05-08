@@ -70,12 +70,25 @@ Proof.
   intros b arm.
   pose proof (get arm b b) as get.
 
+Print LinProof.
+ 
+  (* Set Printing All. *)
+  (* Check Times_L. *)
+  (* apply Times_L with (A := empty arm) (B := (clear b ** table b)). *)
+  (* unfold inSet. *)
+  (* unfold multiplicity. *)
+  (* simpl. *)
+  (* admit.                        (* eq_neq_LinProp *) *)
+  
+  
+
   (* TODO: need to add linear cut rule *)
 
   assert (H: 
 ({{((holds arm b ** (table b -o One) && (on b b -o clear b)) ** table b)}}) |- (holds arm b)
 ->
-({{(empty arm ** clear b ** table b)}}) |- (holds arm b)). admit. 
+({{(empty arm ** clear b ** table b)}}) |- (holds arm b)). intros.
+  (* need to rewrite with get in env *)
 
   apply H. clear H. clear get.
 

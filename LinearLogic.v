@@ -24,11 +24,11 @@ Inductive LinProp : Type :=
 Check (LProp 5).
 
 (* TODO change levels and associativity *)
-Notation "A -o B" := (Implies A B) (at level 100, right associativity).
-Notation "A ** B" := (Times A B) (at level 100, right associativity).
+Notation "A -o B" := (Implies A B) (at level 99, left associativity).
+Notation "A ** B" := (Times A B) (at level 99, left associativity).
 Notation "A && B" := (With A B) (at level 40, left associativity).
-Notation "A ++ B" := (Plus A B) (at level 60, right associativity).
-Notation "! A" := (Bang A) (at level 200, right associativity).
+Notation "A ++ B" := (Plus A B) (at level 60, right associativity). (* watch out *)
+Notation "! A" := (Bang A) (at level 99, left associativity).
 
 Definition env : Type := multiset LinProp.
 
@@ -64,9 +64,8 @@ Reserved Notation "A '|-' B" (at level 3).
 
 (* Here, (->) denotes (--------) *)
 (* convention: env name lowercase, prop name uppercase *)
-(* TODO: remove distinction between g and d? gets rid of matching on g U d *)
 (* gamma = classical resources; delta = linear resources (after Pfenning)
-     can I encode this at the type level? TODO *)
+     can I encode this at the type level? TODO. right now there might be problems with (!) because it doesn't distinguish *)
 
 Inductive LinProof : env -> LinProp -> Prop :=
   | Id : forall (g : env) (A : LinProp),
@@ -74,13 +73,11 @@ Inductive LinProof : env -> LinProp -> Prop :=
            g |- A
 
   (* Multiplicative connectives *)
-
   | Impl_R : forall (g : env) (A B : LinProp),
               (A :: g) |- B ->
               g |- (A -o B)
 
   (* basically, if you can prove the assump A, then you can have the conclusion B *)
-  (* TODO *)
   | Impl_L : forall (g d1 d2 : env) (A B C : LinProp),
                (A -o B) ∈ g ->
                (g \ (A -o B)) == (d1 U d2) ->
@@ -147,26 +144,51 @@ Inductive LinProof : env -> LinProp -> Prop :=
                Zero ∈ g ->
                g |- C
 
-  (* (* Quantifiers: included in Coq *) *)
+  (* Quantifiers: included in Coq *)
 
-  (* (* Exponentials *) *)
-  (* (* TODO: implication is included in Coq *) *)
-  (* (* note the empty linear context *) *)
-  (* | Bang_R : forall (g : env) (A : LinProp), *)
-  (*              d = EmptyBag LinProp -> *)
-  (*              g |- A -> *)
-  (*              g |- !A *)
+  (* Exponentials *)
+  (* TODO: implication is included in Coq *)
 
-  (* (* move a linear factory to be a normal classical assumption *) *)
-  (* | Bang_L : forall (g : env) (A C : LinProp), *)
-  (*              ((A :: g) U d) |- C -> *)
-  (*              (g U ((!A) :: d)) |- C *)
+  (* Bang_R is a rule from pfenning (Bang_L superseded by Bang_Replace) *)
+  (* NOTE: the linear context has to be empty here; everything in g needs to be classical *)
+  | Bang_R : forall (g : env) (A : LinProp),
+               g |- A ->
+               g |- !A
 
-                      (* TODO: AGB has 3 bang rules *)
+  | Bang_Replace : forall (g : env) (A C : LinProp),
+                     (!A) ∈ g ->
+                     (A :: (g \ (!A))) |- C ->
+                     g |- C
+
+  | Bang_Replicate : forall (g : env) (A C : LinProp),
+                     (!A) ∈ g ->
+                     ((!A) :: g) |- C ->
+                     g |- C 
+
+  | Bang_Remove : forall (g : env) (A C : LinProp),
+                    (!A) ∈ g ->
+                    (g \ (!A)) |- C ->
+                    g |- C 
 
   where "x |- y" := (LinProof x y).
 
 (* Various other ILL axioms here *)
 (* Cut rule *)
 
-(* Multiset subtraction? TODO *)
+(* linear cut 
+gamma eliminated from pfenning's version *)
+Axiom cut : forall (g d1 d2 : env) (A C : LinProp),
+              g == (d1 U d2) ->
+              d1 |- A ->
+              (A :: d1) |- C ->
+              g |- C.
+
+(* factory cut -- note g' and d, not d1 and d2 *)
+Axiom cut_fact : forall (g g' d : env) (A C : LinProp),
+                   g == (g' U d) ->
+                   g' |- A ->
+                   ((A :: g') U d) |- C ->
+                   g |- C.
+
+
+
