@@ -70,8 +70,6 @@ Proof.
   intros b arm.
   pose proof (get arm b b) as get.
 
-Print LinProof.
- 
   (* Set Printing All. *)
   (* Check Times_L. *)
   (* apply Times_L with (A := empty arm) (B := (clear b ** table b)). *)
@@ -80,49 +78,89 @@ Print LinProof.
   (* simpl. *)
   (* admit.                        (* eq_neq_LinProp *) *)
   
-  
+assert (get':
+({{empty arm ** clear b}})
+        |- (holds arm b ** (table b -o One) && (on b b -o clear b)) ->
+(empty arm :: clear b :: emptyBag)
+        |- (holds arm b ** (table b -o One) && (on b b -o clear b))).  admit. 
+apply get' in get. clear get'.
 
-  (* TODO: need to add linear cut rule *)
+assert (goal' :
+ (empty arm :: clear b :: table b :: emptyBag) |- (holds arm b)
+-> ({{empty arm ** clear b ** table b}}) |- (holds arm b)). admit. apply goal'. clear goal'.
+
+  Check cut.
+  apply cut with (d1 := empty arm :: clear b :: emptyBag)
+                   (d2 := table b :: emptyBag)
+                   (A := ((holds arm b) ** ((table b) -o One) && (on b b -o clear b))).
+    unfold meq. intros. simpl. admit. (* need eq_neq_prop! *)
+
+  apply get.
+  (* TODO: state after cut is wrong. there's holds arm b ... :: empty arm *)
+  (* eapply Times_L. *)
 
   assert (H: 
-({{((holds arm b ** (table b -o One) && (on b b -o clear b)) ** table b)}}) |- (holds arm b)
+            ((holds arm b) :: (table b -o One) && (on b b -o clear b)
+    :: table b :: emptyBag) |- (holds arm b)
 ->
-({{(empty arm ** clear b ** table b)}}) |- (holds arm b)). intros.
-  (* need to rewrite with get in env *)
+   ((holds arm b ** (table b -o One) && (on b b -o clear b))
+    :: table b :: emptyBag) |- (holds arm b)). intros. (* eapply Times_L. *)
+    admit.
 
-  apply H. clear H. clear get.
+    apply H. clear H.
 
-  assert (H:
-   ({{(holds arm b ** (table b -o One) ** table b)}})
-   |- (holds arm b)
+    (* Check With_L1. *)
+    (* apply With_L1 with (A := (table b -o One)) (B := (on b b -o clear b)). *)
+    (*   unfold inSet. simpl. admit. *)
+    (* TODO this will work but need to figure out how to deal with setMinus *)
+    
+  assert (H: 
+   (holds arm b
+    :: (table b -o One) 
+       :: table b :: emptyBag) |- (holds arm b)
 ->
-   ({{((holds arm b ** (table b -o One) && (on b b -o clear b)) ** table b)}})
-   |- (holds arm b)). admit. apply H. clear H.
+   (holds arm b
+    :: (table b -o One) && (on b b -o clear b)
+       :: table b :: emptyBag) |- (holds arm b)). admit.
+  apply H. clear H.             (* holds arm and empty arm? *)
+ 
+  clear get.
 
-  assert (forall A, {{A}} == (A :: emptyBag)). intros. apply munion_empty_right.
+  (* TODO use impl_L here *)
 
-  (* TODO: add new morphism here? or relation? *)
-  (* setoid_rewrite -> H. (* Fails *) *)
+  (* assert (forall A, {{A}} == (A :: emptyBag)). intros. apply munion_empty_right. *)
 
-  assert (forall A, {{A}} = (A :: emptyBag)). admit. rewrite H0.
+  (* (* TODO: add new morphism here? or relation? *) *)
+  (* (* setoid_rewrite -> H. (* Fails *) *) *)
+
+  (* assert (forall A, {{A}} = (A :: emptyBag)). admit. rewrite H0. *)
 
 assert (H1:
-   ((holds arm b ** One) :: emptyBag)
+   (holds arm b :: One :: emptyBag)
    |- (holds arm b)
 ->
-   ((holds arm b ** (table b -o One) ** table b) :: emptyBag)
+   (holds arm b :: (table b -o One) :: table b :: emptyBag)
    |- (holds arm b)). admit. 
 
-apply H1. clear H H0 H1.
+apply H1. 
+(* clear H H0 H1. *)
 
-assert (emptyBag = (emptyBag U emptyBag)). reflexivity.
+(* apply One_L. *)
+(*   unfold inSet. simpl. admit. *)
+(* again, need to deal with multiplicity, setminus, and eq_neq_prop *)
 
-rewrite H.
+assert (H:
+ {{holds arm b}} |- (holds arm b)
+->
+   (holds arm b :: One :: emptyBag) |- (holds arm b)).
+  admit.
 
-(* TODO split context *)
-(* apply Times_L. *)
+apply H. clear H.
+constructor.
 
-Admitted.
+unfold meq. intros. simpl. reflexivity.
+
+Qed.
 
 (* missing the fact that bot is on table, but it starts out being on the table anyway *)
 Lemma puton : forall (top bot : Block) (arm : Arm),

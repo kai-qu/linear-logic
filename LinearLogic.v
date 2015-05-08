@@ -177,13 +177,16 @@ Inductive LinProof : env -> LinProp -> Prop :=
 
 (* linear cut 
 gamma eliminated from pfenning's version *)
+(* TODO: are these in AGB form? *)
+(* synthesize A *)
 Axiom cut : forall (g d1 d2 : env) (A C : LinProp),
               g == (d1 U d2) ->
               d1 |- A ->
-              (A :: d1) |- C ->
+              (A :: d2) |- C ->
               g |- C.
 
 (* factory cut -- note g' and d, not d1 and d2 *)
+(* d is the set of linear props? *)
 Axiom cut_fact : forall (g g' d : env) (A C : LinProp),
                    g == (g' U d) ->
                    g' |- A ->
