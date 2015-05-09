@@ -42,11 +42,11 @@ Fixpoint eqLPC (f1 f2 : LinProp) : bool :=
     | LProp v1, LProp v2 => beq_nat v1 v2
     | Bang f1_1, Bang f2_1 => eqLPC f1_1 f2_1
     | Implies f1_1 f1_2, Implies f2_1 f2_2 =>
-      andb (eqLPC f1_1 f2_1) (eqLPC f2_1 f2_2)
+      andb (eqLPC f1_1 f2_1) (eqLPC f1_2 f2_2)
     | Times f1_1 f1_2, Times f2_1 f2_2 =>
-      andb (eqLPC f1_1 f2_1) (eqLPC f2_1 f2_2)
+      andb (eqLPC f1_1 f2_1) (eqLPC f1_2 f2_2)
     | With f1_1 f1_2, With f2_1 f2_2 =>
-      andb (eqLPC f1_1 f2_1) (eqLPC f2_1 f2_2)
+      andb (eqLPC f1_1 f2_1) (eqLPC f1_2 f2_2)
     | _, _ => false
   end. (* TODO *)
 

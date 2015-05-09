@@ -62,6 +62,15 @@ Axiom put : forall (top bot : Block) (arm : Arm),
               |- (empty arm ** clear top **
                         (table top && (clear bot -o on top bot) )).
 
+Axiom empty_eq : forall (a : Arm), eqLPC (empty a) (empty a) = true.
+Axiom table_eq : forall (b : Block), eqLPC (table b) (table b) = true.
+Axiom clear_eq : forall (b : Block), eqLPC (clear b) (clear b) = true.
+Axiom on_eq : forall (b c : Block), eqLPC (on b c) (on b c) = true.
+Axiom holds_eq : forall (a : Arm) (b : Block), eqLPC (holds a b) (holds a b) = true.
+
+(* TODO prove and move elsewhere *)
+Axiom times_assoc : forall A B C, (A ** (B ** C)) = ((A ** B) ** C).
+
 Definition emptyBag := EmptyBag LinProp.
 
 (* Lemmas about actions *)
@@ -73,23 +82,38 @@ Proof.
   pose proof (get arm b b) as get.
 
   (* Set Printing All. *)
-  (* Check Times_L. *)
-  (* apply Times_L with (A := empty arm) (B := (clear b ** table b)). *)
-  (* unfold inSet. *)
-  (* unfold multiplicity. *)
-  (* simpl. *)
-  (* admit.                        (* eq_neq_LinProp *) *)
-  
+  Check Times_L.
+  apply Times_L with (A := empty arm) (B := (clear b ** table b)).
+  unfold inSet.
+  unfold multiplicity.
+  simpl.
+  destruct (eq_neq_LinProp). omega. exfalso. apply n.
+  unfold eqLinProp. rewrite times_assoc. simpl. rewrite empty_eq. rewrite clear_eq. rewrite table_eq. reflexivity.
+
+  rewrite times_assoc.
+
+  (* now to deal with setminus AND with clear b ** table b :( *)
+
+
+assert (
+   (empty arm
+    :: (clear b) :: (table b)
+       :: emptyBag) |- (holds arm b)
+->
+   (empty arm
+    :: (clear b ** table b)
+       :: {{empty arm ** clear b ** table b}} \
+          (empty arm ** clear b ** table b)) |- (holds arm b)). admit. apply H. clear H.
+
+  (* apply Times_L with (A := clear b) (B := table b). *)
+  (*   unfold inSet.  *)
+
 assert (get':
 ({{empty arm ** clear b}})
         |- (holds arm b ** (table b -o One) && (on b b -o clear b)) ->
 (empty arm :: clear b :: emptyBag)
         |- (holds arm b ** (table b -o One) && (on b b -o clear b))).  admit. 
 apply get' in get. clear get'.
-
-assert (goal' :
- (empty arm :: clear b :: table b :: emptyBag) |- (holds arm b)
--> ({{empty arm ** clear b ** table b}}) |- (holds arm b)). admit. apply goal'. clear goal'.
 
   Check cut.
   apply cut with (d1 := empty arm :: clear b :: emptyBag)
@@ -128,14 +152,27 @@ assert (goal' :
  
   clear get.
 
-  (* TODO use impl_L here *)
-
 assert (H1:
    (holds arm b :: One :: emptyBag)
    |- (holds arm b)
 ->
    (holds arm b :: (table b -o One) :: table b :: emptyBag)
-   |- (holds arm b)). admit. 
+   |- (holds arm b)).
+
+  intros.
+  Check Impl_L.
+  apply Impl_L with (d1 := table b :: emptyBag) (A := table b) (d2 := holds arm b :: emptyBag) (B := One).
+    unfold inSet. simpl. remember (table b -o One) as imp. destruct (eq_neq_LinProp imp imp).
+    omega. exfalso. apply n. unfold eqLinProp. subst. simpl. rewrite table_eq. reflexivity.
+    (* TODO need two ltacs here!! *)
+
+    unfold setMinus. simpl. unfold munion. simpl. unfold meq. intros. simpl.
+    repeat rewrite <- plus_n_O.
+    destruct (eq_neq_LinProp (table b -o One) a). omega. omega.
+
+    constructor. unfold meq. intros. simpl. omega.
+  
+   admit. (* :: is "commutative" in H... may need meq and setoid rewrite *)
 
 apply H1. 
 (* clear H H0 H1. *)
@@ -154,7 +191,7 @@ apply One_L.
      intros. repeat rewrite <- plus_n_O. destruct (eq_neq_LinProp One a).
      omega. omega.
 
-(* need a SETOID REWRITE *)
+(* need a SETOID REWRITE with H *)
   assert (
  (holds arm b :: emptyBag) |- (holds arm b)
 ->
