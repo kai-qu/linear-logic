@@ -1,5 +1,6 @@
 Require Import Coq.Sets.Multiset.
 Require Export Coq.Sets.Multiset.
+Require Import Coq.Arith.EqNat.
 Set Implicit Arguments.
 
 Definition Var : Type := nat.
@@ -31,27 +32,51 @@ Notation "A ++ B" := (Plus A B) (at level 60, right associativity). (* watch out
 Notation "! A" := (Bang A) (at level 99, left associativity).
 
 Definition env : Type := multiset LinProp.
-
 Definition env1 : env := EmptyBag LinProp.
 
-Definition eqLinProp (f1 : LinProp) (f2 : LinProp) :=
+Fixpoint eqLPC (f1 f2 : LinProp) : bool := 
   match f1, f2 with
-    | LProp v1, LProp v2 => v1 = v2
-    | _, _ => False
+    | One, One => true
+    | Zero, Zero => true
+    | Top, Top => true
+    | LProp v1, LProp v2 => beq_nat v1 v2
+    | Bang f1_1, Bang f2_1 => eqLPC f1_1 f2_1
+    | Implies f1_1 f1_2, Implies f2_1 f2_2 =>
+      andb (eqLPC f1_1 f2_1) (eqLPC f2_1 f2_2)
+    | Times f1_1 f1_2, Times f2_1 f2_2 =>
+      andb (eqLPC f1_1 f2_1) (eqLPC f2_1 f2_2)
+    | With f1_1 f1_2, With f2_1 f2_2 =>
+      andb (eqLPC f1_1 f2_1) (eqLPC f2_1 f2_2)
+    | _, _ => false
   end. (* TODO *)
+
+Definition eqLinProp (f1 f2 : LinProp) :=
+  eqLPC f1 f2 = true. (* lift computational into propositional. hopefully there are lemmas about this *)
 
 Lemma eq_neq_LinProp : forall (f1 f2 : LinProp),
                          {eqLinProp f1 f2} + {~ eqLinProp f1 f2}.
 Proof.
+  Set Printing All.
+  intros.
+  (* SearchAbout sumbool. *)
+  (* Print eq_nat_decide. *)
+  (* Print sumbool.  *)
+  destruct f1; destruct f2; try reflexivity; try auto.
+(* TODO: might need to use the "remember as" trick. anyway this is decidable *)
+
 Admitted.
+
+Check SingletonBag.
 
 Definition singleton := SingletonBag eqLinProp eq_neq_LinProp.
 
 Definition inSet {A : Type} (m : multiset A) (x : A) : Prop :=
   multiplicity m x > 0.
 
-Definition setMinus {A : Type} (m : multiset A) (x : A) : multiset A :=
-  Bag (fun (x : A) => multiplicity m x - 1).
+Definition setMinus (m : multiset LinProp) (e : LinProp) : multiset LinProp :=
+  Bag (fun (x : LinProp) => if eq_neq_LinProp e x
+                            then multiplicity m x - 1
+                            else multiplicity m x).
 
 Notation "{{ Z }}" := (singleton Z) (at level 5, Z at level 99, right associativity).
 Notation "S == T" := (meq S T) (at level 1, left associativity).

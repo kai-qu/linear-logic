@@ -1,6 +1,8 @@
 Require Import LinearLogic.
 Require Import Coq.Strings.String.
 Require Import Setoid.
+Require Import Omega.
+Require Import Coq.Logic.FunctionalExtensionality.
 Open Scope string_scope.
 
 (* --------------- Setup *)
@@ -93,10 +95,10 @@ assert (goal' :
   apply cut with (d1 := empty arm :: clear b :: emptyBag)
                    (d2 := table b :: emptyBag)
                    (A := ((holds arm b) ** ((table b) -o One) && (on b b -o clear b))).
-    unfold meq. intros. simpl. admit. (* need eq_neq_prop! *)
+    unfold meq. intros. simpl. omega. 
 
   apply get.
-  (* TODO: state after cut is wrong. there's holds arm b ... :: empty arm *)
+
   (* eapply Times_L. *)
 
   assert (H: 
@@ -128,13 +130,6 @@ assert (goal' :
 
   (* TODO use impl_L here *)
 
-  (* assert (forall A, {{A}} == (A :: emptyBag)). intros. apply munion_empty_right. *)
-
-  (* (* TODO: add new morphism here? or relation? *) *)
-  (* (* setoid_rewrite -> H. (* Fails *) *) *)
-
-  (* assert (forall A, {{A}} = (A :: emptyBag)). admit. rewrite H0. *)
-
 assert (H1:
    (holds arm b :: One :: emptyBag)
    |- (holds arm b)
@@ -145,21 +140,28 @@ assert (H1:
 apply H1. 
 (* clear H H0 H1. *)
 
-(* apply One_L. *)
-(*   unfold inSet. simpl. admit. *)
-(* again, need to deal with multiplicity, setminus, and eq_neq_prop *)
+apply One_L.
+  unfold inSet. simpl.
+  rewrite <- plus_n_O.
+  Check (eq_neq_LinProp One One).
+  SearchAbout sumbool.
+  assert (eqLinProp One One). unfold eqLinProp. simpl. reflexivity.
+    destruct (eq_neq_LinProp One One). omega.
+    contradiction.
 
-assert (H:
- {{holds arm b}} |- (holds arm b)
+  assert (meq ((holds arm b :: One :: emptyBag) \ One) (holds arm b :: emptyBag)).
+     unfold setMinus. unfold munion. unfold meq. simpl.
+     intros. repeat rewrite <- plus_n_O. destruct (eq_neq_LinProp One a).
+     omega. omega.
+
+(* need a SETOID REWRITE *)
+  assert (
+ (holds arm b :: emptyBag) |- (holds arm b)
 ->
-   (holds arm b :: One :: emptyBag) |- (holds arm b)).
-  admit.
+ ((holds arm b :: One :: emptyBag) \ One) |- (holds arm b)). admit.
+  apply H0. clear H0.     
 
-apply H. clear H.
-constructor.
-
-unfold meq. intros. simpl. reflexivity.
-
+constructor. unfold meq. intros. simpl. omega.
 Qed.
 
 (* missing the fact that bot is on table, but it starts out being on the table anyway *)
