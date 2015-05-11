@@ -120,7 +120,7 @@ Axiom holds_eq : forall (a : Arm) (b : Block), eqLPC (holds a b) (holds a b) = t
 
 (* TODO prove and move elsewhere *)
 Axiom times_assoc : forall A B C, (A ** (B ** C)) = ((A ** B) ** C).
-
+Axiom times_comm : forall A B, (A ** B) = (B ** A).
 
 (* Lemmas about actions *)
 Lemma getTable : forall (b : Block) (arm : Arm),
@@ -267,6 +267,31 @@ Proof.
 
 Admitted.
 
+(* Some automation *)
+
+Tactic Notation "meq_clear" :=
+    unfold meq;
+    intros; unfold multiplicity; simpl;
+    try reflexivity; try omega.
+
+Tactic Notation "inSet_clear" :=
+    unfold inSet; unfold multiplicity; simpl;
+    repeat rewrite <- plus_n_O; try omega.
+
+Tactic Notation "eqterm_clear" constr(t) ident(n) :=
+  destruct (eq_neq_LinProp t t);
+  [ omega |
+    exfalso; apply n; unfold eqLinProp; simpl;
+    try rewrite table_eq; try rewrite on_eq;
+    try rewrite clear_eq; try rewrite holds_eq; try rewrite empty_eq;
+    reflexivity].
+
+Lemma unstick :  forall (A B : LinProp) (env : env),
+                   (A ** B) :: env = A :: B :: env. 
+Proof.
+  intros. 
+Admitted.
+
 (* Initial BlocksWorld state, goal, and proof transforming initial state into goal *)
 Theorem SwapAB : forall (top bot other : Block) (arm : Arm),
                    {{ empty arm ** clear top ** on top bot ** table bot
@@ -286,27 +311,108 @@ Proof.
 (* pick up top *)
   Check cut.
   eapply cut with (d1 := {{empty arm ** clear top}}) (d2 := on top bot :: table bot :: table other :: clear other :: emptyBag).
-    unfold meq. intros. unfold multiplicity. simpl. reflexivity.
+  meq_clear.
 
+  Check get.
+  apply get with (top := top) (bot := bot).
+
+  rewrite unstick.
+
+  Check With_L2.
+
+  apply With_L2 with (A := (table top -o One)) (B := (on top bot -o clear bot)).
+    inSet_clear.
+    eqterm_clear ((table top -o One) && (on top bot -o clear bot)) n.
+
+  assert (
+   ((on top bot -o clear bot)
+    :: (holds arm top
+           :: on top bot
+              :: table bot :: table other :: clear other :: emptyBag) 
+=
+   ((on top bot -o clear bot)
+    :: (holds arm top
+        :: (table top -o One) && (on top bot -o clear bot)
+           :: on top bot
+              :: table bot :: table other :: clear other :: emptyBag) \
+       (table top -o One) && (on top bot -o clear bot)))).
+    (* unfold setMinus. simpl. unfold munion. simpl. unfold meq. intros. simpl. *)
+    (* repeat rewrite <- plus_n_O. *)
+    (* destruct (eq_neq_LinProp (table b -o One) a). omega. omega. *)
+    (* TODO this only works when we have setoid rewrite / meq can be unfolded.
+       automate later *)
+    admit.
+
+    rewrite <- H. clear H.
+
+    Check Impl_L.
+    apply Impl_L with (d1 := {{on top bot}}) (d2 :=  (holds arm top ::
+       table bot :: table other :: clear other :: emptyBag))
+                                             (A := on top bot) (B := clear bot).
+
+    inSet_clear. eqterm_clear (on top bot -o clear bot) n.
+    meq_clear. destruct (eq_neq_LinProp (on top bot -o clear bot) a).
+     simpl. rewrite <- minus_n_O. rewrite <- plus_n_O. omega. omega.
+
+     constructor. meq_clear.
 
 (* put it on the table *)
 
+     Check cut.
 
-(* pick up bottom *)
+assert  (clear bot
+    :: holds arm top :: table bot :: table other :: clear other :: emptyBag =
+   holds arm top :: clear bot :: table bot :: table other :: clear other :: emptyBag).
+admit. rewrite H. clear H.
 
+     eapply cut with (d1 := {{holds arm top}}) (d2 := clear bot :: table bot :: table other :: clear other :: emptyBag).
+     meq_clear.
+
+     eapply putTable.
+
+(* pick up bottom from table *)
+     Check cut.
+     assert (
+   ((empty arm ** table bot ** clear bot)
+    :: clear top :: table top :: table other :: clear other :: emptyBag)
+=
+   ((empty arm ** table top ** clear top)
+    :: clear bot :: table bot :: table other :: clear other :: emptyBag)). admit.
+     rewrite <- H. clear H.
+ 
+     eapply cut with (d1 := {{empty arm ** clear bot ** table bot}}) (d2 := clear top :: table top :: table other :: clear other :: emptyBag).
+     rewrite <- times_assoc. rewrite (times_comm (table bot) (clear bot)). rewrite times_assoc. meq_clear.
+
+      apply getTable.
 
 (* put it on top *)
+      assert (
+   ((holds arm bot ** clear top) :: table top :: table other :: clear other :: emptyBag)
+=
+   (holds arm bot
+    :: clear top :: table top :: table other :: clear other :: emptyBag)). admit.
+      rewrite <- H. clear H.
 
+      eapply cut with (d1 := {{holds arm bot ** clear top}}) (d2 := table top :: table other :: clear other :: emptyBag). meq_clear.
+
+      apply puton.
 
 (* remove unused assumptions *)
 
-  
-Admitted.
+      (* note: no assumptions here are contradictory *)
+rewrite unstick. rewrite unstick.
+
+      apply Times_R with (d2 := empty arm
+    :: clear bot :: table top :: table other :: clear other :: emptyBag)
+                           (d1 := {{on bot top}}).
+
+      meq_clear.
+      
+      constructor. meq_clear.
+      apply Top_R.
+
+Qed.
 
 
 (* Possibly a checker for validity of states: TODO *)
-
-
-
-(* Some automation: TODO *)
 
