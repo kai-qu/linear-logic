@@ -5,6 +5,9 @@ Require Import Omega.
 Require Import Coq.Logic.FunctionalExtensionality.
 Open Scope string_scope.
 
+
+Definition emptyBag := EmptyBag LinProp.
+
 (* --------------- Setup *)
 
 (* To allow setoid rewrites on multisets *)
@@ -14,9 +17,56 @@ Add Parametric Relation A : (multiset A) (@meq A)
  transitivity proved by (@meq_trans A)
  as meq_rel.
 
-Add Parametric Morphism A : (@munion A) with
-  signature (@meq A) ==> (@meq A) ==> (@meq A) as munion_mor.
-Proof. intros. Admitted.
+Add Parametric Morphism A : (@eq (multiset A)) with
+  signature (@meq A) ==> (@meq A) ==> (Basics.flip Basics.impl) (* (Basics.flip Basics.impl) *)
+      as eq_mor.
+Proof.                          (* note this is actually not true *)
+  intros.
+  
+  Print Basics.impl.
+  (* fold Basics.impl. *)
+  unfold meq in *.
+  
+  SearchAbout (Basics.impl _ _).
+  
+Admitted.
+Check LinProof.                 (* but this should be true *)
+Add Morphism LinProof with
+  signature (@meq LinProp) ==> eqLinProp ==> (Basics.flip Basics.impl)
+      as seq_mor.
+Proof.
+  intros.
+  
+Admitted.
+
+Lemma setoid_rewrite_test : forall {A : Type} (s1: multiset A),
+                              meq s1 (EmptyBag A) ->
+                              s1 = EmptyBag A.
+Proof.
+  intros.
+  setoid_rewrite H. reflexivity.
+Qed.
+
+Lemma setoid_rewrite_test_sequent : forall (s: multiset LinProp),
+                              meq s emptyBag ->
+                              (* s = emptyBag -> *)
+                              (* s |- Top -> *)
+                              (* emptyBag |- Top. *)
+                                   s |- Top.
+Proof.
+  (* Set Printing All. *)
+  intros.
+  (* Check seq_mor. *)
+  (* Check LinProof. *)
+  (* Set Typeclasses Debug. *)
+  (* setoid_rewrite H. *)
+  (* setoid_rewrite -> H in H1. *)
+  (* apply H1. *)
+Admitted.  
+
+
+(* Wait, I need to add morphisms for *everything*? linproof and linear connectives? *)
+
 
 (* TODO: Is it complaining that it doesn't know that
 given: e ~ e'
@@ -71,7 +121,6 @@ Axiom holds_eq : forall (a : Arm) (b : Block), eqLPC (holds a b) (holds a b) = t
 (* TODO prove and move elsewhere *)
 Axiom times_assoc : forall A B C, (A ** (B ** C)) = ((A ** B) ** C).
 
-Definition emptyBag := EmptyBag LinProp.
 
 (* Lemmas about actions *)
 Lemma getTable : forall (b : Block) (arm : Arm),
@@ -227,6 +276,30 @@ Theorem SwapAB : forall (top bot other : Block) (arm : Arm),
                    g |- T for any g. *)
 Proof.
   intros.
+  assert (H:
+   ((empty arm ** clear top) :: on top bot :: table bot :: table other ::
+      clear other :: emptyBag) =
+   {{empty arm ** clear top ** on top bot ** table bot ** table other **
+      clear other}}). admit.
+  rewrite <- H. clear H.
+
+(* pick up top *)
+  Check cut.
+  eapply cut with (d1 := {{empty arm ** clear top}}) (d2 := on top bot :: table bot :: table other :: clear other :: emptyBag).
+    unfold meq. intros. unfold multiplicity. simpl. reflexivity.
+
+
+(* put it on the table *)
+
+
+(* pick up bottom *)
+
+
+(* put it on top *)
+
+
+(* remove unused assumptions *)
+
   
 Admitted.
 
