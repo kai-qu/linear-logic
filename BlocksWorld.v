@@ -17,6 +17,23 @@ Add Parametric Relation A : (multiset A) (@meq A)
  transitivity proved by (@meq_trans A)
  as meq_rel.
 
+Notation "P ~= Q" := (eqLinProp P Q) (at level 60, right associativity).
+
+Lemma eqLinProp_refl : forall (A : LinProp), A ~= A.
+Proof. Admitted.
+
+Lemma eqLinProp_sym : forall (A B : LinProp), A ~= B -> B ~= A.
+Proof. Admitted.
+
+Lemma eqLinProp_trans : forall (A B C : LinProp), A ~= B -> B ~= C -> A ~= C.
+Proof. Admitted.
+
+Add Parametric Relation : (LinProp) (eqLinProp)
+ reflexivity proved by (eqLinProp_refl)
+ symmetry proved by (eqLinProp_sym)
+ transitivity proved by (eqLinProp_trans)
+ as eqLinProp_rel.
+
 Add Parametric Morphism A : (@eq (multiset A)) with
   signature (@meq A) ==> (@meq A) ==> (Basics.flip Basics.impl) (* (Basics.flip Basics.impl) *)
       as eq_mor.
@@ -59,7 +76,7 @@ Proof.
   (* Check seq_mor. *)
   (* Check LinProof. *)
   (* Set Typeclasses Debug. *)
-  (* setoid_rewrite H. *)
+  setoid_rewrite H.
   (* setoid_rewrite -> H in H1. *)
   (* apply H1. *)
 Admitted.  
