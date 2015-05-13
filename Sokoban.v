@@ -1,5 +1,8 @@
 Require Import LinearLogic.
 Require Import BlocksWorld.
+Require Import Ascii String List EqNat NArith.
+Open Scope string_scope.
+Open Scope char_scope.
 
 (* what's the point? how's this different from writing a program in haskell? I guess here, writing the rules is enough to enable you to play the game? *)
 
@@ -71,25 +74,48 @@ Proof.
   constructor. meq_clear.
 Qed.
 
-(* TODO: write a level to variable parser *)
+(* TODO: write a level to variable parser, and variable to level *)
 
+Definition nl := (String (ascii_of_nat 10) "")%string.
+Definition test := ("hi" ++ nl ++ "hi")%string.
 Definition level1Str :=
-"
------
--pbg-
------
-".
+(nl ++ 
+"-----" ++ nl ++
+"-pbg-" ++ nl ++
+"-----" ++ nl ++
+"")%string.
 
-Theorem level1 : forall (goalLoc : loc),
-  goalLoc = (3,1) ->
-  {{
-    wall (0,2) ** wall (1,3) ** wall (2,3) ** wall (3,3) ** wall (4,3) ** wall (5,3) **
+Definition level1State goalLoc :=
+  wall (0,2) ** wall (1,3) ** wall (2,3) ** wall (3,3) ** wall (4,3) ** wall (5,3) **
     wall (0,1) ** player (1,1) ** box (2,1) ** goal goalLoc ** clear goalLoc ** wall (4,1) **
-    wall (0,0) ** wall (1,0) ** wall (2,0) ** wall (3,0) ** wall (4,0) ** wall (5,0) 
-  }}
-|- (box goalLoc ** Top). (* this is not so simple when there are multiple boxes and goals *)
+    wall (0,0) ** wall (1,0) ** wall (2,0) ** wall (3,0) ** wall (4,0) ** wall (5,0).
+
+Definition sokoban (l : Prop) (s : string) : Prop := l.
+
+Notation "[Sokoban]  
+a" := (sokoban _ a) (at level 10).
+
+Definition toStr (s : LinProp) : string := level1Str.
+
+Lemma test' : let s := ("hi" ++ nl ++ "there")%string in True. intros. simpl in *.
+
+Tactic Notation "display" constr(s) :=
+  unfold toStr; unfold s;
+  unfold nl; simpl;
+  unfold ascii_of_nat; simpl; unfold ascii_of_pos; simpl.
+
+Theorem level1 : forall (goalLoc : loc) (state : LinProp),
+  goalLoc = (3,1) ->
+  state = level1State goalLoc ->  
+  sokoban 
+  ({{ state }} |- (box goalLoc ** Top))
+  (toStr state).
+(* this is not so simple when there are multiple boxes and goals *)
 Proof.
-  intros. subst.
+  intros. subst. display level1Str.
+  unfold sokoban.
+
+  apply pushRight.
 
 Admitted.
 
@@ -103,7 +129,6 @@ Definition level2Str :=
 -        -
 ----------
 ". 
-
 
 
 
@@ -190,14 +215,4 @@ Final goal:
 Proof search:
 
 ----
-check for stuck states...
-
---------------
-Player A has 
-
-
-Goal:
-Get Player B to like Player A
-
-
- *)
+check for stuck states... *)
