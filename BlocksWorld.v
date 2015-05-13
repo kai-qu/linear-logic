@@ -20,13 +20,28 @@ Add Parametric Relation A : (multiset A) (@meq A)
 Notation "P ~= Q" := (eqLinProp P Q) (at level 60, right associativity).
 
 Lemma eqLinProp_refl : forall (A : LinProp), A ~= A.
-Proof. Admitted.
+Proof. 
+  intros. unfold eqLinProp. induction A; simpl; try reflexivity; try (rewrite IHA1; rewrite IHA2; reflexivity); try assumption.
+  symmetry. apply beq_nat_refl.
+Qed.
 
 Lemma eqLinProp_sym : forall (A B : LinProp), A ~= B -> B ~= A.
-Proof. Admitted.
+Proof. 
+  intros.
+  unfold eqLinProp in *.
+  induction A; induction B; simpl; try reflexivity; inversion H.
+
+  symmetry in H1. apply beq_nat_eq in H1. rewrite H1. reflexivity.
+  
+  rewrite H1. admit.
+
+Admitted.
 
 Lemma eqLinProp_trans : forall (A B C : LinProp), A ~= B -> B ~= C -> A ~= C.
-Proof. Admitted.
+Proof. 
+
+
+Admitted.
 
 Add Parametric Relation : (LinProp) (eqLinProp)
  reflexivity proved by (eqLinProp_refl)
@@ -34,19 +49,6 @@ Add Parametric Relation : (LinProp) (eqLinProp)
  transitivity proved by (eqLinProp_trans)
  as eqLinProp_rel.
 
-Add Parametric Morphism A : (@eq (multiset A)) with
-  signature (@meq A) ==> (@meq A) ==> (Basics.flip Basics.impl) (* (Basics.flip Basics.impl) *)
-      as eq_mor.
-Proof.                          (* note this is actually not true *)
-  intros.
-  
-  Print Basics.impl.
-  (* fold Basics.impl. *)
-  unfold meq in *.
-  
-  SearchAbout (Basics.impl _ _).
-  
-Admitted.
 Check LinProof.                 (* but this should be true *)
 Add Morphism LinProof with
   signature (@meq LinProp) ==> eqLinProp ==> (Basics.flip Basics.impl)
@@ -56,41 +58,13 @@ Proof.
   
 Admitted.
 
-Lemma setoid_rewrite_test : forall {A : Type} (s1: multiset A),
-                              meq s1 (EmptyBag A) ->
-                              s1 = EmptyBag A.
-Proof.
-  intros.
-  setoid_rewrite H. reflexivity.
-Qed.
-
 Lemma setoid_rewrite_test_sequent : forall (s: multiset LinProp),
                               meq s emptyBag ->
-                              (* s = emptyBag -> *)
-                              (* s |- Top -> *)
-                              (* emptyBag |- Top. *)
                                    s |- Top.
 Proof.
-  (* Set Printing All. *)
   intros.
-  (* Check seq_mor. *)
-  (* Check LinProof. *)
-  (* Set Typeclasses Debug. *)
   setoid_rewrite H.
-  (* setoid_rewrite -> H in H1. *)
-  (* apply H1. *)
 Admitted.  
-
-
-(* Wait, I need to add morphisms for *everything*? linproof and linear connectives? *)
-
-
-(* TODO: Is it complaining that it doesn't know that
-given: e ~ e'
-goal: e |- g
-it doesn't know that (e |- g) ~' (e' |- g)
-for some other relation ~'? *)
-(* Add Parametric Morphism A : (|-) with *)
 
 Definition Block : Type := string. (* not nat, so it doesn't clash with Vars *)
 Definition bl : Block := "b".
