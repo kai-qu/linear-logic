@@ -3,6 +3,16 @@ Require Import BlocksWorld.
 
 (* what's the point? how's this different from writing a program in haskell? I guess here, writing the rules is enough to enable you to play the game? *)
 
+Definition loc : Type := prod nat nat.
+(* Definition player : Type := nat. *)
+(* Definition box : Type := nat. *)
+
+Variable clear : loc -> LinProp.
+Variable player : loc -> LinProp.
+Variable box : loc -> LinProp.
+Variable wall : loc -> LinProp.
+Variable goal : loc -> LinProp.
+
 (* forward = pushing rule, backward = pulling rule
 
 something can be clear and be a goal
@@ -15,21 +25,45 @@ push (takes a direction function):
 |-
 ? _ p B ?
 
+? _ B p ? 
+|-
+? B p _ ?
+
 loc player (down pLoc) ** loc b1 pLoc ** clear (up pLoc)
 |-
-clear (down pLoc) ** loc player pLoc ** loc b1 (up pLoc) 
+clear (down pLoc) ** loc player pLoc ** loc b1 (up pLoc)  *)
 
- *)
+Definition up (l : loc) := let (x,y) := l in (x, y + 1).
+Definition down (l : loc) := let (x,y) := l in (x, y - 1).
+Definition right (l : loc) := let (x,y) := l in (x + 1, y).
+Definition left (l : loc) := let (x,y) := l in (x - 1, y).
 
-Definition loc : Type := prod nat nat.
-(* Definition player : Type := nat. *)
-(* Definition box : Type := nat. *)
+(* hoare logic? *)
+Axiom move : forall (c : loc) (dir : loc -> loc),
+                 {{player (dir c)}}
+                 |-
+                 (clear (dir c) ** player c).
 
-Variable clear : loc -> LinProp.
-Variable player : loc -> LinProp.
-Variable box : loc -> LinProp.
-Variable wall : loc -> LinProp.
-Variable goal : loc -> LinProp.
+Axiom pushUp : forall (center : loc),
+  {{player (down center) ** box center ** clear (up center)}}
+               |-
+  (clear (down center) ** player center ** box (up center)).
+
+Axiom pushDown : forall (center : loc),
+  {{clear (down center) ** box center ** player (up center)}}
+               |-
+  (box (down center) ** player center ** clear (up center)).
+
+Axiom pushRight : forall (center : loc),
+  {{player (left center) ** box center ** clear (right center)}}
+               |-
+  (clear (left center) ** player center ** box (right center)).
+
+Axiom pushLeft : forall (center : loc),
+  {{clear (left center) ** box center ** player (right center)}}
+               |-
+  (box (left center) ** player center ** clear (right center)).
+
 
 Theorem level0 :
   {{clear (0,0)}} |- (clear (0,0)).
@@ -45,7 +79,6 @@ Definition level1Str :=
 -pbg-
 -----
 ".
-
 
 Theorem level1 : forall (goalLoc : loc),
   goalLoc = (3,1) ->
@@ -70,6 +103,9 @@ Definition level2Str :=
 -        -
 ----------
 ". 
+
+
+
 
 (* State: 
 
