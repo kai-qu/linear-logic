@@ -129,12 +129,13 @@ Tactic Notation "inSet_clear" :=
 Tactic Notation "eqterm_clear" constr(t) ident(n) :=
   destruct (eq_neq_LinProp t t);
   [ omega |
-    exfalso; apply n; unfold eqLinProp; simpl;
+    exfalso; apply n; try apply eqLinProp_refl;
+    unfold eqLinProp; simpl;
     try rewrite table_eq; try rewrite on_eq;
     try rewrite clear_eq; try rewrite holds_eq; try rewrite empty_eq;
     reflexivity].
 
-Tactic Notation "setMinus_clear" constr(t) ident (a) :=
+Tactic Notation "setMinus_clear" constr(t) ident(a) :=
     unfold setMinus; simpl; unfold munion; simpl; meq_clear; 
     repeat rewrite <- plus_n_O;
     destruct (eq_neq_LinProp t a);

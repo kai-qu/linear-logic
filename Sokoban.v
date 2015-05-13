@@ -1,6 +1,6 @@
 Require Import LinearLogic.
 Require Import BlocksWorld.
-Require Import Ascii String List EqNat NArith.
+Require Import Ascii String EqNat NArith.
 Open Scope string_scope.
 Open Scope char_scope.
 
@@ -104,6 +104,52 @@ Tactic Notation "display" constr(s) :=
   unfold nl; simpl;
   unfold ascii_of_nat; simpl; unfold ascii_of_pos; simpl.
 
+Lemma single_notation : forall (A B : LinProp), ({{A}} U {{B}}) == (A :: B :: emptyBag).
+Proof. meq_clear. Qed.
+
+Lemma swap : forall (A B C G : LinProp) (e : env),
+               ((A :: (B ** C) :: e) |- G)
+               ->
+               (((A ** B) :: C :: e) |- G).
+Proof.
+  intros.
+
+  apply Times_L with (A := A) (B := B). inSet_clear.
+  eqterm_clear (A ** B) n.
+
+  assert ((A :: B :: ((A ** B) :: C :: e) \ (A ** B)) == (A :: B :: C :: e)).
+  meq_clear. setMinus_clear (A ** B) a. rewrite H0. clear H0.
+
+  inversion H; subst. admit. admit. admit. admit.
+(* why is this so hard to prove? it is true, right? *)
+  
+Admitted.
+
+Lemma swap' : forall (A B C G : LinProp),
+               ((A :: {{B ** C}}) |- G)
+               ->
+               (((A ** B) :: {{C}}) |- G).
+Proof.
+  intros.
+  assert (forall P, {{P}} = P :: emptyBag). unfold singleton. unfold munion.
+  unfold SingletonBag. intros. simpl. f_equal. admit. (* functional_extensionality. *)
+  pose proof H0.
+  specialize (H0 C).
+  rewrite H0.
+  apply swap.
+  specialize (H1 (B ** C)).
+  rewrite <- H1.
+  apply H.
+Qed.
+
+Lemma swap'' : forall (A C G : LinProp),
+               ({{A ** C}} |- G)
+               ->
+               (A :: {{C}}) |- G.
+Proof.
+  intros.
+Admitted.  
+
 Theorem level1 : forall (goalLoc : loc) (state : LinProp),
   goalLoc = (3,1) ->
   state = level1State goalLoc ->  
@@ -115,7 +161,69 @@ Proof.
   intros. subst. display level1Str.
   unfold sokoban.
 
+  (* TODO sokoban to sokoban ltac (re-draws board after tactic *)
+
+  (* TODO automate this *)
+  unfold level1State.
+
+  (* find the relevant linprops that match the ones in pushRight; bring to front *)
+Check pushRight.
+assert (
+((player (1, 1) ** 
+      box (2, 1) ** clear (3, 1)) ** (goal (3,1) **
+wall (0, 2) ** wall (1, 3) ** wall (2, 3) ** wall (3, 3) ** wall (4, 3) **
+      wall (5, 3) ** wall (0, 1) ** 
+      wall (4, 1) ** wall (0, 0) ** wall (1, 0) ** 
+      wall (2, 0) ** wall (3, 0) ** wall (4, 0) ** 
+      wall (5, 0)))
+=
+(wall (0, 2) ** wall (1, 3) ** wall (2, 3) ** wall (3, 3) ** wall (4, 3) **
+      wall (5, 3) ** wall (0, 1) ** player (1, 1) ** 
+      box (2, 1) ** goal (3, 1) ** clear (3, 1) ** 
+      wall (4, 1) ** wall (0, 0) ** wall (1, 0) ** 
+      wall (2, 0) ** wall (3, 0) ** wall (4, 0) ** 
+      wall (5, 0))). (* by commutativity of (**) *) admit.
+  
+  rewrite <- H. clear H.
+
+  (* separate into (_ ** _) :: (_ ** _) *)
+  rewrite eq_single.
+  apply unstick.
+
+  (* then cut using the beginning and conclusion of pushRight *)
+  Check cut.
+  eapply cut with (d1 := {{player (1, 1) ** box (2, 1) ** clear (3, 1)}})
+  (d2 :=  {{goal (3, 1) ** wall (0, 2) ** wall (1, 3) ** wall (2, 3) **
+        wall (3, 3) ** wall (4, 3) ** wall (5, 3) ** 
+        wall (0, 1) ** wall (4, 1) ** wall (0, 0) ** 
+        wall (1, 0) ** wall (2, 0) ** wall (3, 0) ** 
+        wall (4, 0) ** wall (5, 0)}}). meq_clear.
+
+  (* actually push *)
+  (* rewrite times_comm. *)
+  assert ((1,1) = left (2,1)). reflexivity.
+  assert ((3,1) = right (2,1)). reflexivity.
+  rewrite H. rewrite H0. clear H. clear H0.
   apply pushRight.
+
+  (* get rid of the union, revert to ** so that the stage can be rendered *)
+  simpl in *.
+  
+  repeat apply swap'.
+  apply swap''.
+
+(* finish by cutting and applying box (3,1) *)
+  Check Times_R.
+  
+  eapply Times_R with (d1 := {{box (3,1)}}).
+(* need to move box out with :: *)
+  
+Admitted.
+  
+  
+  
+
+  (* then do some sokoban stuff to wrap around it *)
 
 Admitted.
 
