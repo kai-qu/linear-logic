@@ -22,7 +22,7 @@ Notation "P ~= Q" := (eqLinProp P Q) (at level 60, right associativity).
 Lemma eqLinProp_refl : forall (A : LinProp), A ~= A.
 Proof. 
   intros. unfold eqLinProp. induction A; simpl; try reflexivity; try (rewrite IHA1; rewrite IHA2; reflexivity); try assumption.
-  symmetry. apply beq_nat_refl.
+  symmetry. apply beq_nat_refl. admit.
 Qed.
 
 Lemma eqLinProp_sym : forall (A B : LinProp), A ~= B -> B ~= A.
