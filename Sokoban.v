@@ -1,94 +1,45 @@
+(* From Wikipedia:
+
+Sokoban (倉庫番 sōkoban?, warehouse keeper) is a type of transport puzzle, in which the player pushes boxes or crates around in a warehouse, trying to get them to storage locations. The puzzle is usually implemented as a video game.
+
+That is, given a freeform shape with some initial state, which contains the locations of
+- clear spaces (immovable, player can go on top)
+- one player (movable, must start on a clear space)
+- walls (immovable, player cannot go on top)
+- goals (immovable, player can go on top)
+- boxes (movable but change location, so player cannot go on top)
+
+The player must achieve the goal of getting each box on top of a goal, finishing with all boxes on unique goals simultaneously.
+
+The player can push boxes in one of four directions onto clear spaces. *)
+
+
+(* Here, we use linear logic to model the initial state, goal, objects, and allowable action. Then we solve one very easy level of Sokoban.
+
+Some notes on this file:
+
+- Why use linear logic? Because it models state. If you move forward, you consume the fact that you were on the previous space. etc.
+  Although I mostly use the (**) connective and none of the fancier ones...
+- The axioms here in Coq are classical; so, the player can use them as many times as she wants.
+- Why do this? How's this different from writing a program in haskell? The novelty is that here, writing the rules is enough to enable you to play the game!
+
+- Sokoban is PSPACE-complete, so proof search will be slow. (It's not implemented here.)
+- Applying rules forward (often using cut) equates to pushing the blocks. 
+- Applying them backward, in proof assistant style, equates to pulling the blocks.
+
+Some optimizations:
+
+- More automation, so a move rule really does a move and doesn't require the environment to be manipulated 5 times to apply it, then apply the next rule.
+- Pretty-printing (level -> environment parser, as well as environment -> level printer). I implemented a bit of it in the style of Coq 2048.
+- Sokoban only allows the player to push one box at a time. One could generalize this to chains of boxes in a line.
+- One could write a checker for stuck states, which do exist. *)
+
+
 Require Import LinearLogic.
 Require Import EnvLemmas.
 Require Import BlocksWorld.
 Require Import Ascii String EqNat NArith.
 Open Scope string_scope.
-
-(* what's the point? how's this different from writing a program in haskell? I guess here, writing the rules is enough to enable you to play the game? *)
-(* State: 
-
-Given a freeform shape enclosed by walls 
-with initial state locations of
-- walls (immovable, cannot go on top)
-- goals (immovable, can go on top)
-- boxes (movable but changes location)
-- one player (movable)
-
-goal:
-- all boxes on top of goals
-- (walls won't have moved)
-- (player can be anywhere)
-
-Props:
-clear location
-box location
-goal location
-wall location
-player location
-loc (x,y)
-
-location =
-| loc : Object -> Coordinate -> Location
-
-Object = Box Name | Player | Wall | Goal
-
-Axioms:
-
-let pLoc = (x,y)
-
-moveUp : loc player pLoc ** clear (up pLoc) |- loc player (up pLoc)
-moveDown : same
-moveLeft : same
-moveRight : same
-
---> what about chains of boxes?
---> uh, I'm not really using the other LL connectives...
---> what about the rest of the board?
---> doing the proof would be like working backward, or pulling the boxes...
-
-pushUpOne : loc player pLoc ** loc box (up pLoc) ** clear (up up pLoc)
-            |- loc player (up pLoc) ** loc box (up up pLoc)
-
-pushUpBlocked : loc player pLoc ** loc box1 (up pLoc) ** loc box2 (up up pLoc)
-            |- 
-
-pushUpBlocked' : 
-    you can push a chain of 2+ blocks forward one space if there is a free space after the block at the end. 
-    to push a chain of 2+ blocks forward one space, 
-    if the block in front can be pushed first...
-    or, the chain of blocks got there if it...
-
-    ? p B B ? ?
-
-There's a difference between a SEQUENT and a LINE (RULE)
-
-      clear (down pLoc) 
-      |-
-      loc player pLoc ** loc box1 (up pLoc) ** loc box2 (up up pLoc)
-
-    
-
-pushUp : loc player pLoc ** loc box (up pLoc) ** ...chaining... 
-             note: chaining is also a problem for the 8-puzzle
-          |- loc player (up pLoc) ** loc box (up up pLoc) ** ...chaining...
-pushDown
-pushLeft
-pushRight
-
-Initial state:
-  clear (0,0) ** clear (0,1) **...** loc player pLoc ** loc box (up pLoc) ** ... loc goal gLoc ... ** loc wall wLoc1 **... |-
-
-Final goal:
-  (walls in same place) (goals in same place) ** 
-  ... each box is on a different gLoc... TODO how to check this?? there are many ways for a box to be on a gLoc
-  need to write a function: given a list of box locations and a list of glocs,
-  - check that box locs <= gLocs
-  - check that each box is on a unique gLoc
-
-Proof search:
-
-----
-check for stuck states... *)
 
 Definition loc : Type := prod nat nat.
 
@@ -98,36 +49,33 @@ Variable box : loc -> LinProp.
 Variable wall : loc -> LinProp.
 Variable goal : loc -> LinProp.
 
-(* forward = pushing rule, backward = pulling rule
-
-something can be clear and be a goal
-
-up : location -> location
-
-push (takes a direction function):
-
-? p B _ ? 
-|-
-? _ p B ?
-
-? _ B p ? 
-|-
-? B p _ ?
-
-loc player (down pLoc) ** loc b1 pLoc ** clear (up pLoc)
-|-
-clear (down pLoc) ** loc player pLoc ** loc b1 (up pLoc)  *)
 
 Definition up (l : loc) := let (x,y) := l in (x, y + 1).
 Definition down (l : loc) := let (x,y) := l in (x, y - 1).
 Definition right (l : loc) := let (x,y) := l in (x + 1, y).
 Definition left (l : loc) := let (x,y) := l in (x - 1, y).
 
-(* hoare logic? *)
+(* The player can either move onto a clear space, or push a box one space in one direction *)
 Axiom move : forall (c : loc) (dir : loc -> loc),
                  {{player (dir c)}}
                  |-
                  (clear (dir c) ** player c).
+
+(* Some diagrams.
+
+Forward: Push to the right 
+Backward: Pull to the left
+
+ ? p B _ ? 
+    |-
+ ? _ p B ?
+
+Forward: Push to the left
+Backward: Pull to the left
+
+ ? _ B p ? 
+    |-
+ ? B p _ ?              *)
 
 Axiom pushUp : forall (center : loc),
   {{player (down center) ** box center ** clear (up center)}}
@@ -149,6 +97,10 @@ Axiom pushLeft : forall (center : loc),
                |-
   (box (left center) ** player center ** clear (right center)).
 
+(* --------------------- *)
+
+(* Solve an easy level of Sokoban (just pushes the block once to the right).
+Note how many environment manipulations it takes. *)
 
 Theorem level0 :
   {{clear (0,0)}} |- (clear (0,0)).
@@ -158,6 +110,7 @@ Qed.
 
 (* TODO: write a level to variable parser, and variable to level *)
 
+(* Approach modeled on Coq 2048 *)
 Definition nl := (String (ascii_of_nat 10) "")%string.
 Definition test := ("hi" ++ nl ++ "hi")%string.
 Definition level1Str :=
@@ -174,7 +127,6 @@ Definition level1State goalLoc :=
 
 Definition sokoban (l : Prop) (s : string) : Prop := l.
 
-(* Approach modeled on Coq 2048 *)
 Notation "[Sokoban] a" := (sokoban _ a) (at level 10).
 
 Definition toStr (s : LinProp) : string := level1Str.
@@ -280,7 +232,6 @@ apply unstick.
   apply Top_R.
 
   (* TODO: embed this tactic in something that manipulates the sokoban (with image) *)
-
 Qed.
 
 
@@ -294,4 +245,6 @@ Definition level2Str :=
 -        -
 ----------
 ". 
+
+(* TODO: define this and solve it! (push block to the left, then down and to the right *)
 

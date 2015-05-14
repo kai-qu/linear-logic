@@ -1,3 +1,20 @@
+(* For the blocks world example in Power/Webster: defines primitives, defines actions of robot arms, and defines 3 sub-lemmas. 
+
+Proves the main example:
+
+ B
+ A  C
+-------
+
+can be transformed into 
+
+
+ A
+ B  C
+-------
+
+(where the second stack of 2 blocks is at a different place on the table) *)
+
 Require Import LinearLogic.
 Require Import EnvLemmas.
 Require Import Coq.Strings.String.
@@ -6,8 +23,8 @@ Require Import Coq.Logic.FunctionalExtensionality.
 Open Scope string_scope.
 
 
-Definition Block : Type := string. (* not nat, so it doesn't clash with Vars *)
-Definition Arm : Type := string. (* not nat, so it doesn't clash with Vars *)
+Definition Block : Type := string.
+Definition Arm : Type := string.
 (* Also not modeling the table *)
 
 (* Note that it's not a block datatype or arm datatype with internal state. Blocks and arms have no state. Their state is determined by the props holding for it in the environment. Could we model this differently? *)
@@ -51,11 +68,11 @@ Axiom holds_eq : forall (a : Arm) (b : Block), eqLPC (holds a b) (holds a b) = t
 Axiom times_assoc : forall A B C, (A ** (B ** C)) = ((A ** B) ** C).
 Axiom times_comm : forall A B, (A ** B) = (B ** A).
 
-
-
 (* ------------------------ *)
 
 (* Lemmas about actions *)
+
+(* getTable is long and messy -- first axiom I proved, so no automation *)
 Lemma getTable : forall (b : Block) (arm : Arm),
               {{ empty arm ** clear b ** table b }}
               |- (holds arm b).
@@ -71,8 +88,6 @@ Proof.
   unfold eqLinProp. rewrite times_assoc. simpl. rewrite empty_eq. rewrite clear_eq. rewrite table_eq. reflexivity.
 
   rewrite times_assoc.
-
-  (* now to deal with setminus AND with clear b ** table b :( *)
 
 
 assert (
@@ -296,4 +311,3 @@ assert  ((clear bot
 Qed.
 
 (* Possibly a checker for validity of states: TODO *)
-

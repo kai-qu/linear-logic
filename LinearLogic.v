@@ -1,3 +1,7 @@
+(* Encode linear logic connectives and rules. (Combines Pfenning, Power/Webster, and Gwenn-Bosser's approaches.)
+Defines the notation for them and for manipulating the environment 
+(multiset of linear props). *)
+
 Require Import Coq.Sets.Multiset.
 Require Export Coq.Sets.Multiset.
 Require Import Coq.Arith.EqNat.
@@ -20,11 +24,7 @@ Inductive LinProp : Type :=
   | Zero : LinProp                       (* Additive identity TODO *)
   (* Exponentials *)
   | Bang : LinProp -> LinProp.
-  (* implication/arrow TODO *)
 
-Check (LProp 5).
-
-(* TODO change levels and associativity *)
 Notation "A -o B" := (Implies A B) (at level 99, left associativity).
 Notation "A ** B" := (Times A B) (at level 99, left associativity).
 Notation "A && B" := (With A B) (at level 40, left associativity).
@@ -32,8 +32,8 @@ Notation "A ++ B" := (Plus A B) (at level 60, right associativity). (* watch out
 Notation "! A" := (Bang A) (at level 99, left associativity).
 
 Definition env : Type := multiset LinProp.
-Definition env1 : env := EmptyBag LinProp.
 
+(* Equality of LinProps (needed for multisets) *)
 Fixpoint eqLPC (f1 f2 : LinProp) : bool := 
   match f1, f2 with
     | One, One => true
@@ -48,10 +48,10 @@ Fixpoint eqLPC (f1 f2 : LinProp) : bool :=
     | With f1_1 f1_2, With f2_1 f2_2 =>
       andb (eqLPC f1_1 f2_1) (eqLPC f1_2 f2_2)
     | _, _ => false
-  end. (* TODO *)
+  end.
 
 Definition eqLinProp (f1 f2 : LinProp) :=
-  eqLPC f1 f2 = true. (* lift computational into propositional. hopefully there are lemmas about this *)
+  eqLPC f1 f2 = true. (* lift computational into propositional *)
 
 Lemma eq_neq_LinProp : forall (f1 f2 : LinProp),
                          {eqLinProp f1 f2} + {~ eqLinProp f1 f2}.
@@ -62,12 +62,10 @@ Proof.
   (* Print eq_nat_decide. *)
   (* Print sumbool.  *)
   destruct f1; destruct f2; try reflexivity; try auto.
-(* TODO: might need to use the "remember as" trick. anyway this is decidable *)
-
+  (* TODO: might need to use the "remember as" trick. anyway this is decidable *)
 Admitted.
 
-Check SingletonBag.
-
+(* Things about multisets of linear props, which is how the environment is represented *)
 Definition singleton := SingletonBag eqLinProp eq_neq_LinProp.
 
 Definition inSet {A : Type} (m : multiset A) (x : A) : Prop :=
@@ -87,7 +85,7 @@ Notation "S \ x" := (setMinus S x) (at level 60, right associativity).
 
 Reserved Notation "A '|-' B" (at level 3).
 
-(* Here, (->) denotes (--------) *)
+(* Here, (->) (Coq implication) denotes (--------) (logic "lines") *)
 (* convention: env name lowercase, prop name uppercase *)
 (* gamma = classical resources; delta = linear resources (after Pfenning)
      can I encode this at the type level? TODO. right now there might be problems with (!) because it doesn't distinguish *)
@@ -174,7 +172,7 @@ Inductive LinProof : env -> LinProp -> Prop :=
   (* Exponentials *)
   (* TODO: implication is included in Coq *)
 
-  (* Bang_R is a rule from pfenning (Bang_L superseded by Bang_Replace) *)
+  (* Bang_R is a rule from Pfenning (Bang_L superseded by Bang_Replace) *)
   (* NOTE: the linear context has to be empty here; everything in g needs to be classical *)
   | Bang_R : forall (g : env) (A : LinProp),
                g |- A ->
@@ -198,25 +196,19 @@ Inductive LinProof : env -> LinProp -> Prop :=
   where "x |- y" := (LinProof x y).
 
 (* Various other ILL axioms here *)
-(* Cut rule *)
 
-(* linear cut 
-gamma eliminated from pfenning's version *)
-(* TODO: are these in AGB form? *)
-(* synthesize A *)
+(* Linear cut: 
+gamma is eliminated from pfenning's version *)
+(* Need to synthesize an A *)
 Axiom cut : forall (g d1 d2 : env) (A C : LinProp),
               g == (d1 U d2) ->
               d1 |- A ->
               (A :: d2) |- C ->
               g |- C.
 
-(* factory cut -- note g' and d, not d1 and d2 *)
-(* d is the set of linear props? *)
+(* Factory cut -- note g' and d, not d1 and d2 *)
 Axiom cut_fact : forall (g g' d : env) (A C : LinProp),
                    g == (g' U d) ->
                    g' |- A ->
                    ((A :: g') U d) |- C ->
                    g |- C.
-
-
-
