@@ -213,19 +213,45 @@ wall (0, 2) ** wall (1, 3) ** wall (2, 3) ** wall (3, 3) ** wall (4, 3) **
   apply swap''.
 
 (* finish by cutting and applying box (3,1) *)
-  Check Times_R.
-  
-  eapply Times_R with (d1 := {{box (3,1)}}).
 (* need to move box out with :: *)
+
+assert (
+(clear (1, 1) **
+      (player (2, 1) **
+       (box (3, 1) **
+        (goal (3, 1) ** wall (0, 2) ** wall (1, 3) ** wall (2, 3) **
+         wall (3, 3) ** wall (4, 3) ** wall (5, 3) ** 
+         wall (0, 1) ** wall (4, 1) ** wall (0, 0) ** 
+         wall (1, 0) ** wall (2, 0) ** wall (3, 0) ** 
+         wall (4, 0) ** wall (5, 0))))) =
+(box (3, 1) **
+      (player (2, 1) **
+       (clear (1, 1) **
+        (goal (3, 1) ** wall (0, 2) ** wall (1, 3) ** wall (2, 3) **
+         wall (3, 3) ** wall (4, 3) ** wall (5, 3) ** 
+         wall (0, 1) ** wall (4, 1) ** wall (0, 0) ** 
+         wall (1, 0) ** wall (2, 0) ** wall (3, 0) ** 
+         wall (4, 0) ** wall (5, 0)))))). (* by ** comm and assoc *) admit.
+rewrite H. clear H.
+
+rewrite eq_single.
+apply unstick.
   
-Admitted.
-  
-  
-  
+  eapply Times_R with (d1 := {{box (3,1)}}) (d2 := {{ (player (2, 1) **
+        (clear (1, 1) **
+         (goal (3, 1) ** wall (0, 2) ** wall (1, 3) ** wall (2, 3) **
+          wall (3, 3) ** wall (4, 3) ** wall (5, 3) ** 
+          wall (0, 1) ** wall (4, 1) ** wall (0, 0) ** 
+          wall (1, 0) ** wall (2, 0) ** wall (3, 0) ** 
+          wall (4, 0) ** wall (5, 0))))  }}). meq_clear.
+
+  constructor. meq_clear.
+  apply Top_R.
 
   (* then do some sokoban stuff to wrap around it *)
 
-Admitted.
+Qed.
+
 
 Definition level2Str := 
 "
