@@ -1,75 +1,13 @@
 Require Import LinearLogic.
+Require Import EnvLemmas.
 Require Import Coq.Strings.String.
-Require Import Setoid.
 Require Import Omega.
 Require Import Coq.Logic.FunctionalExtensionality.
 Open Scope string_scope.
 
 
-Definition emptyBag := EmptyBag LinProp.
-
-(* --------------- Setup *)
-
-(* To allow setoid rewrites on multisets *)
-Add Parametric Relation A : (multiset A) (@meq A)
- reflexivity proved by (@meq_refl A)
- symmetry proved by (@meq_sym A)
- transitivity proved by (@meq_trans A)
- as meq_rel.
-
-Notation "P ~= Q" := (eqLinProp P Q) (at level 60, right associativity).
-
-Lemma eqLinProp_refl : forall (A : LinProp), A ~= A.
-Proof. 
-  intros. unfold eqLinProp. induction A; simpl; try reflexivity; try (rewrite IHA1; rewrite IHA2; reflexivity); try assumption.
-  symmetry. apply beq_nat_refl. admit.
-Qed.
-
-Lemma eqLinProp_sym : forall (A B : LinProp), A ~= B -> B ~= A.
-Proof. 
-  intros.
-  unfold eqLinProp in *.
-  induction A; induction B; simpl; try reflexivity; inversion H.
-
-  symmetry in H1. apply beq_nat_eq in H1. rewrite H1. reflexivity.
-  
-  rewrite H1. admit.
-
-Admitted.
-
-Lemma eqLinProp_trans : forall (A B C : LinProp), A ~= B -> B ~= C -> A ~= C.
-Proof. 
-
-
-Admitted.
-
-Add Parametric Relation : (LinProp) (eqLinProp)
- reflexivity proved by (eqLinProp_refl)
- symmetry proved by (eqLinProp_sym)
- transitivity proved by (eqLinProp_trans)
- as eqLinProp_rel.
-
-Check LinProof.                 (* but this should be true *)
-Add Morphism LinProof with
-  signature (@meq LinProp) ==> eqLinProp ==> (Basics.flip Basics.impl)
-      as seq_mor.
-Proof.
-  intros.
-  
-Admitted.
-
-Lemma setoid_rewrite_test_sequent : forall (s: multiset LinProp),
-                              meq s emptyBag ->
-                                   s |- Top.
-Proof.
-  intros.
-  setoid_rewrite H.
-Admitted.  
-
 Definition Block : Type := string. (* not nat, so it doesn't clash with Vars *)
-Definition bl : Block := "b".
 Definition Arm : Type := string. (* not nat, so it doesn't clash with Vars *)
-Definition ar : Arm := "arm".
 (* Also not modeling the table *)
 
 (* Note that it's not a block datatype or arm datatype with internal state. Blocks and arms have no state. Their state is determined by the props holding for it in the environment. Could we model this differently? *)
@@ -115,39 +53,6 @@ Axiom times_comm : forall A B, (A ** B) = (B ** A).
 
 
 
-(* Some automation *)
-
-Tactic Notation "meq_clear" :=
-    unfold meq;
-    intros; unfold multiplicity; simpl;
-    try reflexivity; try omega.
-
-Tactic Notation "inSet_clear" :=
-    unfold inSet; unfold multiplicity; simpl;
-    repeat rewrite <- plus_n_O; try omega.
-
-Tactic Notation "eqterm_clear" constr(t) ident(n) :=
-  destruct (eq_neq_LinProp t t);
-  [ omega |
-    exfalso; apply n; try apply eqLinProp_refl;
-    unfold eqLinProp; simpl;
-    try rewrite table_eq; try rewrite on_eq;
-    try rewrite clear_eq; try rewrite holds_eq; try rewrite empty_eq;
-    reflexivity].
-
-Tactic Notation "setMinus_clear" constr(t) ident(a) :=
-    unfold setMinus; simpl; unfold munion; simpl; meq_clear; 
-    repeat rewrite <- plus_n_O;
-    destruct (eq_neq_LinProp t a);
-    omega; omega.
-
-(* TODO: redo to work in sequent *)
-Lemma unstick' :  forall (A B : LinProp) (env : env),
-                   (A ** B) :: env = A :: B :: env. 
-Proof.
-  intros. 
-Admitted.
-
 (* ------------------------ *)
 
 (* Lemmas about actions *)
@@ -158,8 +63,6 @@ Proof.
   intros b arm.
   pose proof (get arm b b) as get.
 
-  (* Set Printing All. *)
-  Check Times_L.
   apply Times_L with (A := empty arm) (B := (clear b ** table b)).
   unfold inSet.
   unfold multiplicity.
@@ -192,7 +95,6 @@ assert (get':
         |- (holds arm b ** (table b -o One) && (on b b -o clear b))).  admit. 
 apply get' in get. clear get'.
 
-  Check cut.
   apply cut with (d1 := empty arm :: clear b :: emptyBag)
                    (d2 := table b :: emptyBag)
                    (A := ((holds arm b) ** ((table b) -o One) && (on b b -o clear b))).
@@ -237,7 +139,6 @@ assert (H1:
    |- (holds arm b)).
 
   intros.
-  Check Impl_L.
   apply Impl_L with (d1 := table b :: emptyBag) (A := table b) (d2 := holds arm b :: emptyBag) (B := One).
     unfold inSet. simpl. remember (table b -o One) as imp. destruct (eq_neq_LinProp imp imp).
     omega. exfalso. apply n. unfold eqLinProp. subst. simpl. rewrite table_eq. reflexivity.
@@ -257,8 +158,6 @@ apply H1.
 apply One_L.
   unfold inSet. simpl.
   rewrite <- plus_n_O.
-  Check (eq_neq_LinProp One One).
-  SearchAbout sumbool.
   assert (eqLinProp One One). unfold eqLinProp. simpl. reflexivity.
     destruct (eq_neq_LinProp One One). omega.
     contradiction.
@@ -295,41 +194,7 @@ Proof.
 
 Admitted.
 
-Lemma unstick : forall (A B C : LinProp) (e : env),
-                     (A :: B :: e) |- C ->
-                     ((A ** B) :: e) |- C.
-Proof.
-  intros. 
-  apply Times_L with (A := A) (B := B).
-  inSet_clear. destruct eq_neq_LinProp. omega. exfalso. apply n. apply eqLinProp_refl.
-  
-  assert ((A :: B :: ((A ** B) :: e) \ (A ** B)) == (A :: B :: e)).
-  unfold setMinus. meq_clear. destruct (eq_neq_LinProp (A ** B) a). omega. omega.
-
-  setoid_rewrite H0. assumption.
-Qed.
-
-Lemma stick : forall (A B C : LinProp) (e : env),
-                     ((A ** B) :: e) |- C ->
-                     (A :: B :: e) |- C.
-Proof.
-  intros.
-
-  (* induction H. *)
-(* Print LinProof. *)
-  
-  inversion H; subst; clear H.
-  unfold meq in *.              (* clearly true, since C must be A ** B here... *)
-  admit.
-
-  apply Impl_R. 
-
-  admit.
-Admitted.
-
-Lemma eq_single : forall (A : LinProp),
-                    {{A}} == (A :: emptyBag).
-Proof. meq_clear. Qed.
+(* -------------- *)
 
 (* Initial BlocksWorld state, goal, and proof transforming initial state into goal *)
 Theorem SwapAB : forall (top bot other : Block) (arm : Arm),
@@ -429,7 +294,6 @@ assert  ((clear bot
       constructor. meq_clear.
       apply Top_R.
 Qed.
-
 
 (* Possibly a checker for validity of states: TODO *)
 
