@@ -1,6 +1,4 @@
-kye
-COS 510 final project
-Due 5/13/15
+Overview
 
 I read the following papers for background:
 
