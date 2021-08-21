@@ -4,19 +4,19 @@ Lemmas about manipulating the environment, plus some tactics for automatically d
 
 Require Import LinearLogic.
 Require Import Setoid.
-Require Import Omega.
+Require Import Lia.
 Require Import String.
 
 (* Copied from BlockWorld *)
 Definition Block : Type := string.
 Definition Arm : Type := string.
 
-Variable on : Block -> Block -> LinProp.
-Variable table : Block -> LinProp.
-Variable clear : Block -> LinProp.
+Parameter on : Block -> Block -> LinProp.
+Parameter table : Block -> LinProp.
+Parameter clear : Block -> LinProp.
 (* Describes robot arm *)
-Variable holds : Arm -> Block -> LinProp.
-Variable empty : Arm -> LinProp.
+Parameter holds : Arm -> Block -> LinProp.
+Parameter empty : Arm -> LinProp.
 
 Axiom empty_eq : forall (a : Arm), eqLPC (empty a) (empty a) = true.
 Axiom table_eq : forall (b : Block), eqLPC (table b) (table b) = true.
@@ -42,7 +42,7 @@ Proof.
   intros. unfold eqLinProp. induction A; simpl; try reflexivity;
                             try (rewrite IHA1; rewrite IHA2; reflexivity); try assumption.
   symmetry. apply EqNat.beq_nat_refl.  admit.
-Qed.
+Admitted.
 
 Lemma eqLinProp_sym : forall (A B : LinProp), A ~= B -> B ~= A.
 Proof. 
@@ -87,16 +87,16 @@ Admitted.
 Tactic Notation "meq_clear" :=
     unfold meq;
     intros; unfold multiplicity; simpl;
-    try reflexivity; try omega.
+    try reflexivity; try lia.
 
 Tactic Notation "inSet_clear" :=
     unfold inSet; unfold multiplicity; simpl;
-    repeat rewrite <- plus_n_O; try omega.
+    repeat rewrite <- plus_n_O; try lia.
 
 (* must call with ident "n" *)
 Tactic Notation "eqterm_clear" constr(t) ident(n) :=
   destruct (eq_neq_LinProp t t);
-  [ omega |
+  [ lia |
     exfalso; apply n; try apply eqLinProp_refl;
     unfold eqLinProp; simpl;
     try rewrite table_eq; try rewrite on_eq;
@@ -107,7 +107,7 @@ Tactic Notation "setMinus_clear" constr(t) ident(a) :=
     unfold setMinus; simpl; unfold munion; simpl; meq_clear; 
     repeat rewrite <- plus_n_O;
     destruct (eq_neq_LinProp t a);
-    omega; omega.
+    lia.
 
 (* -------------- *)
 
@@ -117,10 +117,10 @@ Lemma unstick : forall (A B C : LinProp) (e : env),
 Proof.
   intros. 
   apply Times_L with (A := A) (B := B).
-  inSet_clear. destruct eq_neq_LinProp. omega. exfalso. apply n. apply eqLinProp_refl.
+  inSet_clear. destruct eq_neq_LinProp. lia. exfalso. apply n. apply eqLinProp_refl.
   
   assert ((A :: B :: ((A ** B) :: e) \ (A ** B)) == (A :: B :: e)).
-  unfold setMinus. meq_clear. destruct (eq_neq_LinProp (A ** B) a). omega. omega.
+  unfold setMinus. meq_clear. destruct (eq_neq_LinProp (A ** B) a). lia. lia.
 
   setoid_rewrite H0. assumption.
 Qed.
@@ -183,7 +183,7 @@ Proof.
   specialize (H1 (B ** C)).
   rewrite <- H1.
   apply H.
-Qed.
+Admitted.
 
 Lemma swap'' : forall (A C G : LinProp),
                ({{A ** C}} |- G)
