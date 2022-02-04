@@ -18,7 +18,7 @@ can be transformed into
 Require Import LinearLogic.
 Require Import EnvLemmas.
 Require Import Coq.Strings.String.
-Require Import Omega.
+Require Import Lia.
 Require Import Coq.Logic.FunctionalExtensionality.
 Open Scope string_scope.
 
@@ -37,12 +37,12 @@ Definition Arm : Type := string.
 
 (* Note that these are *linear logic propositions*, not *rules*, which are Coq propositions like (... --- ...) *)
 (* Describes blocks *)
-Variable on : Block -> Block -> LinProp.
-Variable table : Block -> LinProp.
-Variable clear : Block -> LinProp.
+Parameter on : Block -> Block -> LinProp.
+Parameter table : Block -> LinProp.
+Parameter clear : Block -> LinProp.
 (* Describes robot arm *)
-Variable holds : Arm -> Block -> LinProp.
-Variable empty : Arm -> LinProp.
+Parameter holds : Arm -> Block -> LinProp.
+Parameter empty : Arm -> LinProp.
 
 (* Axioms (valid actions) *)
 (* Note these are rules (Coq propositions), not linear logic propositions *)
@@ -84,7 +84,7 @@ Proof.
   unfold inSet.
   unfold multiplicity.
   simpl.
-  destruct (eq_neq_LinProp). omega. exfalso. apply n.
+  destruct (eq_neq_LinProp). lia. exfalso. apply n.
   unfold eqLinProp. rewrite times_assoc. simpl. rewrite empty_eq. rewrite clear_eq. rewrite table_eq. reflexivity.
 
   rewrite times_assoc.
@@ -113,7 +113,7 @@ apply get' in get. clear get'.
   apply cut with (d1 := empty arm :: clear b :: emptyBag)
                    (d2 := table b :: emptyBag)
                    (A := ((holds arm b) ** ((table b) -o One) && (on b b -o clear b))).
-    unfold meq. intros. simpl. omega. 
+    unfold meq. intros. simpl. lia. 
 
   apply get.
 
@@ -156,14 +156,14 @@ assert (H1:
   intros.
   apply Impl_L with (d1 := table b :: emptyBag) (A := table b) (d2 := holds arm b :: emptyBag) (B := One).
     unfold inSet. simpl. remember (table b -o One) as imp. destruct (eq_neq_LinProp imp imp).
-    omega. exfalso. apply n. unfold eqLinProp. subst. simpl. rewrite table_eq. reflexivity.
+    lia. exfalso. apply n. unfold eqLinProp. subst. simpl. rewrite table_eq. reflexivity.
     (* TODO need two ltacs here!! *)
 
     unfold setMinus. simpl. unfold munion. simpl. unfold meq. intros. simpl.
     repeat rewrite <- plus_n_O.
-    destruct (eq_neq_LinProp (table b -o One) a). omega. omega.
+    destruct (eq_neq_LinProp (table b -o One) a). lia. lia.
 
-    constructor. unfold meq. intros. simpl. omega.
+    constructor. unfold meq. intros. simpl. lia.
   
    admit. (* :: is "commutative" in H... may need meq and setoid rewrite *)
 
@@ -174,13 +174,13 @@ apply One_L.
   unfold inSet. simpl.
   rewrite <- plus_n_O.
   assert (eqLinProp One One). unfold eqLinProp. simpl. reflexivity.
-    destruct (eq_neq_LinProp One One). omega.
+    destruct (eq_neq_LinProp One One). lia.
     contradiction.
 
   assert (meq ((holds arm b :: One :: emptyBag) \ One) (holds arm b :: emptyBag)).
      unfold setMinus. unfold munion. unfold meq. simpl.
      intros. repeat rewrite <- plus_n_O. destruct (eq_neq_LinProp One a).
-     omega. omega.
+     lia. lia.
 
 (* need a SETOID REWRITE with H *)
   assert (
@@ -189,8 +189,8 @@ apply One_L.
  ((holds arm b :: One :: emptyBag) \ One) |- (holds arm b)). admit.
   apply H0. clear H0.     
 
-constructor. unfold meq. intros. simpl. omega.
-Qed.
+constructor. unfold meq. intros. simpl. lia.
+Admitted.
 
 (* missing the fact that bot is on table, but it starts out being on the table anyway *)
 Lemma puton : forall (top bot : Block) (arm : Arm),
@@ -254,7 +254,7 @@ Proof.
 
     inSet_clear. eqterm_clear (on top bot -o clear bot) n.
     meq_clear. destruct (eq_neq_LinProp (on top bot -o clear bot) a).
-     simpl. rewrite <- minus_n_O. rewrite <- plus_n_O. omega. omega.
+     simpl. lia. lia.
 
      constructor. meq_clear.
 

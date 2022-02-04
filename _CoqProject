@@ -1,0 +1,7 @@
+-R . LinearLogic
+
+LinearLogic.v
+EnvLemmas.v
+BlocksWorld.v
+Sokoban.v
+Notes.v

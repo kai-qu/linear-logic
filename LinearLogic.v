@@ -2,7 +2,6 @@
 Defines the notation for them and for manipulating the environment 
 (multiset of linear props). *)
 
-Require Import Coq.Sets.Multiset.
 Require Export Coq.Sets.Multiset.
 Require Import Coq.Arith.EqNat.
 Set Implicit Arguments.
@@ -25,11 +24,11 @@ Inductive LinProp : Type :=
   (* Exponentials *)
   | Bang : LinProp -> LinProp.
 
-Notation "A -o B" := (Implies A B) (at level 99, left associativity).
-Notation "A ** B" := (Times A B) (at level 99, left associativity).
+Notation "A -o B" := (Implies A B) (at level 98, left associativity).
+Notation "A ** B" := (Times A B) (at level 98, left associativity).
 Notation "A && B" := (With A B) (at level 40, left associativity).
 Notation "A ++ B" := (Plus A B) (at level 60, right associativity). (* watch out *)
-Notation "! A" := (Bang A) (at level 99, left associativity).
+Notation "! A" := (Bang A) (at level 98, left associativity).
 
 Definition env : Type := multiset LinProp.
 

@@ -43,11 +43,11 @@ Open Scope string_scope.
 
 Definition loc : Type := prod nat nat.
 
-Variable clear : loc -> LinProp.
-Variable player : loc -> LinProp.
-Variable box : loc -> LinProp.
-Variable wall : loc -> LinProp.
-Variable goal : loc -> LinProp.
+Parameter clear : loc -> LinProp.
+Parameter player : loc -> LinProp.
+Parameter box : loc -> LinProp.
+Parameter wall : loc -> LinProp.
+Parameter goal : loc -> LinProp.
 
 
 Definition up (l : loc) := let (x,y) := l in (x, y + 1).
@@ -167,7 +167,7 @@ wall (0, 2) ** wall (1, 3) ** wall (2, 3) ** wall (3, 3) ** wall (4, 3) **
       wall (4, 1) ** wall (0, 0) ** wall (1, 0) ** 
       wall (2, 0) ** wall (3, 0) ** wall (4, 0) ** 
       wall (5, 0))). (* by commutativity of (**) *) admit.
-  
+
   rewrite <- H. clear H.
 
   (* separate into (_ ** _) :: (_ ** _) *)
@@ -191,7 +191,7 @@ wall (0, 2) ** wall (1, 3) ** wall (2, 3) ** wall (3, 3) ** wall (4, 3) **
 
   (* get rid of the union, revert to ** so that the stage can be rendered *)
   simpl in *.
-  
+
   repeat apply swap'.
   apply swap''.
 
@@ -219,7 +219,7 @@ rewrite H. clear H.
 
 rewrite eq_single.
 apply unstick.
-  
+
   eapply Times_R with (d1 := {{box (3,1)}}) (d2 := {{ (player (2, 1) **
         (clear (1, 1) **
          (goal (3, 1) ** wall (0, 2) ** wall (1, 3) ** wall (2, 3) **
@@ -232,7 +232,7 @@ apply unstick.
   apply Top_R.
 
   (* TODO: embed this tactic in something that manipulates the sokoban (with image) *)
-Qed.
+Admitted.
 
 
 Definition level2Str := 
@@ -247,4 +247,3 @@ Definition level2Str :=
 ". 
 
 (* TODO: define this and solve it! (push block to the left, then down and to the right *)
-
